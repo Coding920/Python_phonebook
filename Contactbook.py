@@ -1,14 +1,15 @@
 import csv
 
-fieldnames = ['Name', 'Number']
+#This is a contact book program that holds a persons name and their number
+
 contactbook = {}
 
+# Put Csv file into memory as a dict
 with open("Contactbook.csv", 'r', newline='') as contactfile:
-    contactreader = csv.DictReader(contactfile)
+    contactreader = csv.reader(contactfile)
 
     for line in contactreader:
-         contactbook = line
-
+         contactbook[f"{line[0]}"] = line[1]
 
 def main():
     print("Hello! You can: Add a new contact (add), list contacts (list), search contacts (search), quit (q)")
@@ -21,42 +22,39 @@ def main():
                     add()
 
                 case "list":
-                      lister()
+                    lister()
 
                 case "search":
-                      search()
-
-                case "save":
-                      save()
+                    search()
 
                 case "quit" | "q":
+                    save()
                     break
                  
 def add():
      name = input("Who is it that you are adding? ")
      number = input("And their phone number? ")
 
-     #contactbook["Name:"] = f"{name}"
-     #contactbook["Number:"] = f"{number}" #Needs redone
+     contactbook[f"{name}"] = f"{number}"
 
 def lister():
-     for rows in contactbook:
-          print(f"{contactbook}")
+     for keys in contactbook:
+          print(f"{keys} {contactbook[keys]}")
 
 def search():
      name = input("Who are you looking for? ")
 
      if name in contactbook:
-          print(f"{contactbook[f"{name}"]}")
+          print(f"Found! Number: {contactbook[f"{name}"]}")
      else:
           print("Not found")
 
 def save():
+     # Writes contactbook dict back into the csv file
      with open("Contactbook.csv", 'w', newline='') as contactfile:
-          csvwriter = csv.DictWriter(contactfile, fieldnames = fieldnames)
+          csvwriter = csv.writer(contactfile)
 
-          csvwriter.writeheader()
-          for row in contactbook:
-               csvwriter.writerow(row)
+          for keys in contactbook:
+               csvwriter.writerow([f"{keys}"] + [f"{contactbook[keys]}"])
 
 main()
