@@ -11,13 +11,16 @@ with open("Contactbook.csv", 'r', newline='') as contactfile:
     for line in contactreader:
          contactbook[f"{line[0]}"] = line[1]
 
-         print("Hello!", end=' ')
+         
+print("Hello!", end=' ')
 
 def main():
     print("Add or delete a contact (add/del), list contacts (list), search contacts (search), quit (q)")
     
     while True:
-            choice = input("What would you like to do? ")
+            print()
+            choice = input("What would you like to do? ", )
+            print()
 
             match choice.lower():
                 case "add":
