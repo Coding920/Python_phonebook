@@ -11,11 +11,16 @@ with open("Contactbook.csv", 'r', newline='') as contactfile:
     for line in contactreader:
          contactbook[f"{line[0]}"] = line[1]
 
+         
+print("Hello!", end=' ')
+
 def main():
-    print("Hello! You can: Add a new contact (add), list contacts (list), search contacts (search), quit (q)")
+    print("Add or delete a contact (add/del), list contacts (list), search contacts (search), quit (q)")
     
     while True:
-            choice = input("What would you like to do? ")
+            print()
+            choice = input("What would you like to do? ", )
+            print()
 
             match choice.lower():
                 case "add":
@@ -26,6 +31,9 @@ def main():
 
                 case "search":
                     search()
+               
+                case "del":
+                    delete()
 
                 case "quit" | "q":
                     save()
@@ -48,6 +56,15 @@ def search():
           print(f"Found! Number: {contactbook[f"{name}"]}")
      else:
           print("Not found")
+
+def delete():
+     name = input("Who's contact would you like to delete? ")
+
+     if name in contactbook:
+          del contactbook[name]
+          print("Successfully deleted!")
+     else:
+          print("Unable to delete. Contact not found")
 
 def save():
      # Writes contactbook dict back into the csv file
