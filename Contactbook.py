@@ -9,13 +9,16 @@ class Contact:
         self.phoneNumber = phoneNumber
         self.email = email
         self.notes = notes
-
-    def display(self):
-        print(f"{self.name} {self.phoneNumber} {self.email} {self.notes}")
         return
 
+    def display(self):
+        return f"{self.name},  {self.phoneNumber},  {self.email},  {self.notes}"
+    
+    def csv_format(self):
+         return f'{self.name}',f'{self.phoneNumber}',f'{self.email}',f'{self.notes}'
+
 contactbook = {}
-seperator = ', '
+visual_seperator = ',  '
 
 
 # Put Csv file into memory as a dict
@@ -25,18 +28,16 @@ with open("Contactbook.csv", 'r', newline='') as contactfile:
     csv_headers = next(csvreader)
     header_length = len(csv_headers)
 
-    if csvreader.line_num > 1:
-         for line in csvreader:
-              contactbook[f"{line[0]}"] = Contact(line[slice(1,header_length)])
+    for line in csvreader: #hardcoded for now, unsure how to program using header_length and slicing
+         contactbook[f"{line[0]}"] = Contact(line[0], line[1], line[2], line[3])
          
 print("Hello!", end=' ')
 
 def main():
-    print("Add or delete a contact (add/del), list contacts (list), search contacts (search), quit (q)")
     
     while True:
             print()
-            choice = input("What would you like to do? ", )
+            choice = input("Add or delete a contact (add/del), list contacts (list), search contacts (search), quit (q): ")
             print()
 
             match choice.lower():
@@ -65,9 +66,9 @@ def add():
      contactbook[f"{name}"] = Contact(name, number, email, notes)
 
 def lister():
-     print(seperator.join(csv_headers))
+     print(visual_seperator.join(csv_headers))
      for keys in contactbook:
-          print(f"{contactbook[f"{keys}"].display()}")
+          print(f"{contactbook[keys].display()}")
 
 def search():
      name = input("Who are you looking for? ")
@@ -94,6 +95,6 @@ def save():
           csvwriter.writerow(csv_headers)
 
           for keys in contactbook:
-               csvwriter.writerow([f"{keys}"] + [f"{contactbook[keys]}"])
+               csvwriter.writerow(contactbook[keys].csv_format())
 
 main()
