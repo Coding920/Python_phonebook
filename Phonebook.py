@@ -1,35 +1,16 @@
-import csv
+import sqlite3 as sql
 
-#This is a contact book program that holds a persons name and their number
+#This is a phonebook program that holds a persons name and their number
 
-class Contact:
+contactdb = sql.connect("contacts.db")
+dbcursor = contactdb.cursor()
 
-    def __init__(self, name, phoneNumber, email, notes):
-        self.name = name
-        self.phoneNumber = phoneNumber
-        self.email = email
-        self.notes = notes
-        return
-
-    def display(self):
-        return f"{self.name},  {self.phoneNumber},  {self.email},  {self.notes}"
-    
-    def csv_format(self):
-         return f'{self.name}',f'{self.phoneNumber}',f'{self.email}',f'{self.notes}'
-
-contactbook = {}
-visual_seperator = ',  '
-
-
-# Put Csv file into memory as a dict
-with open("Contactbook.csv", 'r', newline='') as contactfile:
-    csvreader = csv.reader(contactfile)
-
-    csv_headers = next(csvreader)
-    header_length = len(csv_headers)
-
-    for line in csvreader: #hardcoded for now, unsure how to program using header_length and slicing
-         contactbook[f"{line[0]}"] = Contact(line[0], line[1], line[2], line[3])
+# This is where i'm testing to see if the table already exists, or else creating it 
+tableCreation = "CREATE TABLE contacts(PersonID INTEGER PRIMARY KEY AUTOINCREMENT, Name TEXT, PhoneNumber TEXT, Email TEXT, Notes TEXT)"
+openingTest = dbcursor.execute("SELECT name FROM sqlite_master WHERE name='contacts'")
+if openingTest.fetchone() == None:
+     print("Creating database ...")
+     dbcursor.execute(tableCreation)
          
 print("Hello!", end=' ')
 
@@ -63,38 +44,31 @@ def add():
      email = input("Email address: ")
      notes = input("Any notes? ")
 
-     contactbook[f"{name}"] = Contact(name, number, email, notes)
+     dbcursor.execute("INSERT INTO contacts (Name, PhoneNumber, Email, Notes) VALUES (?, ?, ?, ?)", (name, number, email, notes))
 
 def lister():
-     print(visual_seperator.join(csv_headers))
-     for keys in contactbook:
-          print(f"{contactbook[keys].display()}")
+     # TODO Make a function to list all contacts, maybe in the future add sorting
+     wholeTable = dbcursor.execute("SELECT * FROM contacts")
+     print(wholeTable.fetchall())
+     pass 
 
 def search():
-     name = input("Who are you looking for? ")
+     # TODO Make a function to search, at first just by name but then lets maybe broaden to other columns as well
+     name = input("Who would you like to search for? ")
 
-     if name in contactbook:
-          print(f"Found! {contactbook[f"{name}"].display()}")
-     else:
-          print("Not found")
+     searchResult = dbcursor.execute("SELECT * FROM contacts WHERE Name = ?", [name])
+     print(searchResult.fetchall())
+     pass
 
 def delete():
-     name = input("Who's contact would you like to delete? ")
-
-     if name in contactbook:
-          del contactbook[name]
-          print("Successfully deleted!")
-     else:
-          print("Unable to delete. Contact not found")
+     # TODO Make function to delete specified contact
+     pass
 
 def save():
-     # Writes contactbook dict back into the csv file
-     with open("Contactbook.csv", 'w', newline='') as contactfile:
-          csvwriter = csv.writer(contactfile)
+     # TODO Determine if save function is neccesary 
+     contactdb.commit()
+     pass
 
-          csvwriter.writerow(csv_headers)
-
-          for keys in contactbook:
-               csvwriter.writerow(contactbook[keys].csv_format())
+# TODO Edit function, add column for more data function, 
 
 main()
