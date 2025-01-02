@@ -1,17 +1,32 @@
 import sqlite3 as sql
 
+class contactDisplayer:
+     def __init__(self, name, phone, email, notes):
+          self.name = name
+          self.phone = phone
+          self.email = email
+          self.notes = notes
+          pass
+
+     def displayer(self):
+          print(f"Name: {self.name}, Phone number: {self.phone}, Email: {self.email}, Notes: {self.notes}")
+          pass
+
 #This is a phonebook program that holds a persons name and their number
 
 contactdb = sql.connect("contacts.db")
 dbcursor = contactdb.cursor()
 
-# This is where i'm testing to see if the table already exists, or else creating it 
-tableCreation = "CREATE TABLE contacts(PersonID INTEGER PRIMARY KEY AUTOINCREMENT, Name TEXT, PhoneNumber TEXT, Email TEXT, Notes TEXT)"
-openingTest = dbcursor.execute("SELECT name FROM sqlite_master WHERE name='contacts'")
-if openingTest.fetchone() == None:
-     print("Creating database ...")
-     dbcursor.execute(tableCreation)
+# SQL entry that tests and creates table
+tableCreation = """CREATE TABLE IF NOT EXISTS contacts(
+                    Name TEXT,
+                    Phone TEXT,
+                    Email TEXT,
+                    Notes TEXT)"""
+dbcursor.execute(tableCreation)
          
+# Menu and prompts
+
 print("Hello!", end=' ')
 
 def main():
@@ -30,6 +45,9 @@ def main():
 
                 case "search":
                     search()
+
+                case "edit":
+                    edit()
                
                 case "del":
                     delete()
@@ -44,31 +62,56 @@ def add():
      email = input("Email address: ")
      notes = input("Any notes? ")
 
-     dbcursor.execute("INSERT INTO contacts (Name, PhoneNumber, Email, Notes) VALUES (?, ?, ?, ?)", (name, number, email, notes))
+     dbcursor.execute("INSERT INTO contacts VALUES (?, ?, ?, ?)", (name, number, email, notes))
+     contactdb.commit()
+     print("Contact has been added!")
 
 def lister():
-     # TODO Make a function to list all contacts, maybe in the future add sorting
-     wholeTable = dbcursor.execute("SELECT * FROM contacts")
-     print(wholeTable.fetchall())
+     # TODO Add functionality to sort and filter items
+     wholeTable = dbcursor.execute("SELECT * FROM contacts").fetchall()
+     for i in range(len(wholeTable)):
+          contactDisplayer(*wholeTable[i]).displayer()
      pass 
 
 def search():
-     # TODO Make a function to search, at first just by name but then lets maybe broaden to other columns as well
+     # TODO Add search sorting functions, search by other columns
      name = input("Who would you like to search for? ")
 
      searchResult = dbcursor.execute("SELECT * FROM contacts WHERE Name = ?", [name])
-     print(searchResult.fetchall())
+     results = searchResult.fetchone()
+     
+     if results == None:
+          print("Couldn't find any contacts by that name")
+     else:
+          contactDisplayer(*results).displayer()
      pass
 
 def delete():
      # TODO Make function to delete specified contact
+     name = input("Who's contact would you like to delete? ")
+     dbcursor.execute("DELETE FROM contacts WHERE Name = ?", [name])
+     contactdb.commit()
+     print("Deletion successful!")
      pass
 
 def save():
-     # TODO Determine if save function is neccesary 
+     # TODO Determine if save function is neccesary, and how to better implement it 
+     contactdb.commit()
+     dbcursor.close()
+     pass
+
+def edit():
+     # TODO FIX currently doesn't work
+     nameIndex = input("Who's contact would you like to change? ")
+     name = input()
+     phone = input()
+     email = input()
+     notes = input()
+
+     dbcursor.execute("UPDATE contacts SET Name=?, Phone=?, Email=?, Notes=? WHERE Name=?", (name, phone, email, notes, nameIndex))
      contactdb.commit()
      pass
 
-# TODO Edit function, add column for more data function, 
+# TODO add column for more data function, make presentation prettier, etc.
 
 main()
