@@ -33,24 +33,24 @@ def main():
     
     while True:
             print()
-            choice = input("Add or delete a contact (add/del), list contacts (list), search contacts (search), quit (q): ")
+            choice = input("Add or delete a contact (add/del), edit a contact (edit), list contacts (list), search contacts (search), quit (q): ")
             print()
 
             match choice.lower():
                 case "add":
                     add()
 
-                case "list":
-                    lister()
-
-                case "search":
-                    search()
-
                 case "edit":
                     edit()
                
                 case "del":
                     delete()
+
+                case "list":
+                    lister()
+
+                case "search":
+                    search()
 
                 case "quit" | "q":
                     save()
@@ -94,22 +94,22 @@ def delete():
      print("Deletion successful!")
      pass
 
+def edit():
+     # TODO FIX currently doesn't work
+     nameIndex = input("Who's contact would you like to change? ")
+     name = input("New name: ")
+     phone = input("New phone: ")
+     email = input("New email: ")
+     notes = input("New notes: ")
+
+     dbcursor.execute("UPDATE contacts SET Name=?, Phone=?, Email=?, Notes=? WHERE Name=?", (name, phone, email, notes, nameIndex))
+     contactdb.commit()
+     pass
+
 def save():
      # TODO Determine if save function is neccesary, and how to better implement it 
      contactdb.commit()
      dbcursor.close()
-     pass
-
-def edit():
-     # TODO FIX currently doesn't work
-     nameIndex = input("Who's contact would you like to change? ")
-     name = input()
-     phone = input()
-     email = input()
-     notes = input()
-
-     dbcursor.execute("UPDATE contacts SET Name=?, Phone=?, Email=?, Notes=? WHERE Name=?", (name, phone, email, notes, nameIndex))
-     contactdb.commit()
      pass
 
 # TODO add column for more data function, make presentation prettier, etc.
