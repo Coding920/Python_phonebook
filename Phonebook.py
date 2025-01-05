@@ -1,4 +1,21 @@
+#This is a phonebook program 
+
 import sqlite3 as sql
+import tkinter as tk 
+from tkinter import ttk
+
+class GUI:
+    def __init__(self):
+         pass
+
+# GUI Setup
+root = tk.Tk()
+root.title("Phonebook")
+# root.geometry("600x750")
+frame = ttk.Frame(root)
+frame.pack()
+
+# /GUI Setup
 
 class contactDisplayer:
      def __init__(self, name, phone, email, notes):
@@ -12,8 +29,7 @@ class contactDisplayer:
           print(f"Name: {self.name}, Phone number: {self.phone}, Email: {self.email}, Notes: {self.notes}")
           pass
 
-#This is a phonebook program that holds a persons name and their number
-
+# DB Setup
 contactdb = sql.connect("contacts.db")
 dbcursor = contactdb.cursor()
 
@@ -24,38 +40,33 @@ tableCreation = """CREATE TABLE IF NOT EXISTS contacts(
                     Email TEXT,
                     Notes TEXT)"""
 dbcursor.execute(tableCreation)
+
+# /DB Setup
          
-# Menu and prompts
+# Main Menu
+fMainMenu = ttk.Frame(root, padding=50)
+fMainMenu.pack()
 
-print("Hello!", end=' ')
+mainLabel = ttk.Label(fMainMenu, text="Hello, What would you like to do today?")
+addButton = ttk.Button(fMainMenu, text="Add contact", command=None)
+delButton = ttk.Button(fMainMenu, text="Delete contact", command=None)
+listButton = ttk.Button(fMainMenu, text="List contacts", command=None)
+searchButton = ttk.Button(fMainMenu, text="Search contacts", command=None)
+editButton = ttk.Button(fMainMenu, text="Edit contact", command=None)
 
-def main():
-    
-    while True:
-            print()
-            choice = input("Add or delete a contact (add/del), edit a contact (edit), list contacts (list), search contacts (search), quit (q): ")
-            print()
+mainLabel.pack(padx = 5, pady = 3)
+addButton.pack(padx = 5, pady = 3)
+delButton.pack(padx = 5, pady = 3)
+listButton.pack(padx = 5, pady = 3)
+searchButton.pack(padx = 5, pady = 3)
+editButton.pack(padx = 5, pady = 3)
 
-            match choice.lower():
-                case "add":
-                    add()
+# /Main Menu
 
-                case "edit":
-                    edit()
-               
-                case "del":
-                    delete()
+# GUI Startpoint
+root.mainloop()
 
-                case "list":
-                    lister()
 
-                case "search":
-                    search()
-
-                case "quit" | "q":
-                    save()
-                    break
-                 
 def add():
      name = input("Who is it that you are adding? ")
      number = input("Phone number: ")
@@ -114,4 +125,36 @@ def save():
 
 # TODO add column for more data function, make presentation prettier, etc.
 
-main()
+# Old CLI menu
+
+# Menu and prompts
+
+# print("Hello!", end=' ')
+
+# def main():
+    
+#     while True:
+#             print()
+#             choice = input("Add or delete a contact (add/del), edit a contact (edit), list contacts (list), search contacts (search), quit (q): ")
+#             print()
+
+#             match choice.lower():
+#                 case "add":
+#                     add()
+
+#                 case "edit":
+#                     edit()
+               
+#                 case "del":
+#                     delete()
+
+#                 case "list":
+#                     lister()
+
+#                 case "search":
+#                     search()
+
+#                 case "quit" | "q":
+#                     save()
+#                     break
+# main()
