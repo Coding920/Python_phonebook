@@ -77,6 +77,7 @@ listListerButton = ttk.Button(fList, text="List Contacts", command=lambda: listC
 listListerButton.grid(column=0, row=1)
 fListResponseTable = ttk.Frame(fList, padding=framePadding)
 fListResponseTable.grid(column=0, row=2)
+listResponseLabel = []
 
 pages = [fMainMenu, fAdd, fDelete, fList]
 
@@ -90,18 +91,17 @@ def addContact():
     
 def listContacts():
     # TODO Add functionality to sort and filter items
+    fListResponseTable.grid(column=0, row=2)
     wholeTable = dbcursor.execute("SELECT * FROM contacts").fetchall()
     for index, contact in enumerate(wholeTable):
         for listIndex, item in enumerate(wholeTable[index]):
             displayableContact = [*wholeTable[index]]
             print(displayableContact[listIndex], end="\t")
-
-            listResponseLabel = []
-            listResponseLabel[index][listIndex] = ttk.Label(fListResponseTable, text=f"{displayableContact[listIndex]}")
-            listResponseLabel[index][listIndex].grid(column=listIndex, row=index + 2)
-        print()
-        while fList:
-            pass
+            
+            contactInfo = ttk.Label(fListResponseTable, text=displayableContact[listIndex])
+            contactInfo.grid(column=listIndex, row=index)
+            listResponseLabel.append(contactInfo)
+        print() 
 
 def searchContacts():
     # TODO Add search sorting functions, search by other columns
@@ -144,6 +144,8 @@ def pageSwitch(index):
     for page in pages:
         page.pack_forget()
     fListResponseTable.grid_forget()
+    for label in listResponseLabel:
+        label.destroy()  
 
     pages[index].pack(expand=1)
 
@@ -164,56 +166,3 @@ dbcursor.execute(tableCreation)
 # GUI Startpoint
 root.mainloop()
 # TODO add column for more data function, make presentation prettier, etc.
-
-
-
-
-
-
-
-# Old CLI menu
-
-# Menu and prompts
-
-# print("Hello!", end=' ')
-
-# def main():
-    
-#     while True:
-#             print()
-#             choice = input("Add or delete a contact (add/del), edit a contact (edit), list contacts (list), search contacts (search), quit (q): ")
-#             print()
-
-#             match choice.lower():
-#                 case "add":
-#                     add()
-
-#                 case "edit":
-#                     edit()
-               
-#                 case "del":
-#                     delete()
-
-#                 case "list":
-#                     lister()
-
-#                 case "search":
-#                     search()
-
-#                 case "quit" | "q":
-#                     save()
-#                     break
-# main()
-# 
-# Also Phased out contact displayer
-# class contactDisplayer:
-#     def __init__(self, name, phone, email, notes):
-#         self.name = name
-#         self.phone = phone
-#         self.email = email
-#         self.notes = notes
-#         pass
-
-#     def displayer(self):
-#         print(f"Name: {self.name}, Phone number: {self.phone}, Email: {self.email}, Notes: {self.notes}")
-#         pass
