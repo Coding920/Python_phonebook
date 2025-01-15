@@ -23,7 +23,7 @@ mainLabel = ttk.Label(fMainMenu, text="Hello, What would you like to do today?")
 addButton = ttk.Button(fMainMenu, text="Add contact", command=lambda: pageSwitch(pages.index(fAdd)))
 delButton = ttk.Button(fMainMenu, text="Delete contact", command=lambda: pageSwitch(pages.index(fDelete)))
 listButton = ttk.Button(fMainMenu, text="List contacts", command=lambda: pageSwitch(pages.index(fList)))
-searchButton = ttk.Button(fMainMenu, text="Search contacts", command=None)
+searchButton = ttk.Button(fMainMenu, text="Search contacts", command=lambda: pageSwitch(pages.index(fSearch)))
 editButton = ttk.Button(fMainMenu, text="Edit contact", command=None)
 
 mainLabel.grid(row=0)
@@ -79,7 +79,28 @@ fListResponseTable = ttk.Frame(fList, padding=framePadding)
 fListResponseTable.grid(column=0, row=2)
 listResponseLabel = []
 
-pages = [fMainMenu, fAdd, fDelete, fList]
+# Search Page
+
+fSearch = ttk.Frame(root, padding=framePadding)
+
+searchNameEntry = ttk.Entry(fSearch, textvariable=name)
+searchNumberEntry = ttk.Entry(fSearch, textvariable=number)
+searchEmailEntry = ttk.Entry(fSearch, textvariable=email)
+searchNotesEntry = ttk.Entry(fSearch, textvariable=notes)
+searchBackButton = ttk.Button(fSearch, text="Back to Main Menu", command=lambda: pageSwitch(pages.index(fMainMenu)))
+searchButton = ttk.Button(fSearch, text="Search", command=lambda: searchContacts(name.get()))
+fSearchResult = ttk.Frame(fSearch, padding=framePadding)
+
+searchNameEntry.grid(column=0, row=0)
+searchNumberEntry.grid(column=0, row=1)
+searchEmailEntry.grid(column=0, row=2)
+searchNotesEntry.grid(column=0, row=3)
+searchButton.grid(column=1, row=1)
+searchBackButton.grid(column=1, row=3)
+fSearchResult.grid(column=0, row=4, columnspan=2)
+searchResultLabel = ttk.Label(fSearchResult, text="")
+
+pages = [fMainMenu, fAdd, fDelete, fList, fSearch]
 
 def addContact():
     dbcursor.execute("INSERT INTO contacts VALUES (?, ?, ?, ?)", (name.get(), number.get(), email.get(), notes.get()))
@@ -96,24 +117,24 @@ def listContacts():
     for index, contact in enumerate(wholeTable):
         for listIndex, item in enumerate(wholeTable[index]):
             displayableContact = [*wholeTable[index]]
-            print(displayableContact[listIndex], end="\t")
             
             contactInfo = ttk.Label(fListResponseTable, text=displayableContact[listIndex])
             contactInfo.grid(column=listIndex, row=index)
             listResponseLabel.append(contactInfo)
-        print() 
 
-def searchContacts():
+def searchContacts(name):
     # TODO Add search sorting functions, search by other columns
-    name = input("Who would you like to search for? ")
-
     searchResult = dbcursor.execute("SELECT * FROM contacts WHERE Name = ?", (name, ))
     results = searchResult.fetchone()
     
     if results == None:
-        print("Couldn't find any contacts by that name")
+        searchResultLabel.configure(text="No Results")
+        searchResultLabel.update()    
     else:
-        contactDisplayer(*results).displayer()
+        searchResultLabel.configure(text=results)
+        searchResultLabel.update()
+
+    searchResultLabel.grid(column=0, row=0)
 
 def deleteContact():
     # TODO Make function to delete specified contact
