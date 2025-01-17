@@ -1,4 +1,4 @@
-#This is a phonebook program 
+#This is a phonebook that allows easy access to a DB
 
 import sqlite3 as sql
 import tkinter as tk 
@@ -7,6 +7,7 @@ from tkinter import ttk
 # GUI Setup
 root = tk.Tk()
 root.title("Phonebook")
+# root.wm_iconphoto() Mess with for new window icon in top left
 
 # Variables
 name = tk.StringVar()
@@ -161,8 +162,8 @@ def deleteContact():
     dbcursor.execute("DELETE FROM contacts WHERE name = ?", (name.get(), ))
     contactdb.commit()
      
-    delResponseLabel = ttk.Label(fDelete, text="Contact deleted!")
-    delResponseLabel.grid(column=1, row=1)
+    delResponseLabel = ttk.Label(fAdd, text="Contact deleted!")
+    delResponseLabel.grid(column=2, row=2)
     fDelete.after(sleeptime, lambda: delResponseLabel.grid_forget())
 
 def editContact():
