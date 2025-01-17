@@ -13,6 +13,7 @@ name = tk.StringVar()
 number = tk.StringVar()
 email = tk.StringVar()
 notes = tk.StringVar()
+stringvars = [name, number, email, notes]
 framePadding = 20
 sleeptime = 15 * 100 # *100 to bring MS in Seconds with first int having the first place being in tenths of seconds
 
@@ -26,34 +27,40 @@ listButton = ttk.Button(fMainMenu, text="List contacts", command=lambda: pageSwi
 searchButton = ttk.Button(fMainMenu, text="Search contacts", command=lambda: pageSwitch(pages.index(fSearch)))
 editButton = ttk.Button(fMainMenu, text="Edit contact", command=None)
 
-mainLabel.grid(row=0)
-addButton.grid(row=1)
-delButton.grid(row=2)
-listButton.grid(row=3)
-searchButton.grid(row=4)
-editButton.grid(row=5)
+mainLabel.grid(row=0, sticky="NS")
+addButton.grid(row=1, sticky="NS")
+delButton.grid(row=2, sticky="NS")
+listButton.grid(row=3, sticky="NS")
+searchButton.grid(row=4, sticky="NS")
+editButton.grid(row=5, sticky="NS")
 fMainMenu.pack(expand=1)
 
 # Add page
 fAdd = ttk.Frame(root, padding=framePadding)
 
 addNameEntry = ttk.Entry(fAdd, textvariable=name)
+addNameLabel = ttk.Label(fAdd, text="Name: ")
 addNumberEntry = ttk.Entry(fAdd, textvariable=number)
+addNumberLabel = ttk.Label(fAdd, text="Phone Number:")
 addEmailEntry = ttk.Entry(fAdd, textvariable=email)
+addEmailLabel = ttk.Label(fAdd, text="Email Address:")
 addNotesEntry = ttk.Entry(fAdd, textvariable=notes)
+addNotesLabel = ttk.Label(fAdd, text="Notes: ")
 addConfirmButton = ttk.Button(fAdd, text="Add Contact", command=lambda: addContact())
+deleteButton = ttk.Button(fAdd, text="Delete Contact", command=lambda: deleteContact())
 addBackButton = ttk.Button(fAdd, text="Back to Main Menu", command=lambda: pageSwitch(pages.index(fMainMenu)))
 
-addNameEntry.grid(column=0, row=0)
-addNameEntry.insert(index=0, string="Name")
-addNumberEntry.grid(column=0, row=1)
-addNumberEntry.insert(index=1, string="Number")
-addEmailEntry.grid(column=0, row=2)
-addEmailEntry.insert(index=2, string="Email")
-addNotesEntry.grid(column=0, row=3)
-addNotesEntry.insert(index=3, string="Notes")
-addConfirmButton.grid(column=1, row=0)
-addBackButton.grid(column=1, row=3)
+addNameLabel.grid(column=0, row=0)
+addNumberLabel.grid(column=0, row=1)
+addEmailLabel.grid(column=0, row=2)
+addNotesLabel.grid(column=0, row=3)
+addNameEntry.grid(column=1, row=0)
+addNumberEntry.grid(column=1, row=1)
+addEmailEntry.grid(column=1, row=2)
+addNotesEntry.grid(column=1, row=3)
+addConfirmButton.grid(column=2, row=0)
+deleteButton.grid(column=2, row=1)
+addBackButton.grid(column=2, row=3)
 
 # Delete Page
 fDelete = ttk.Frame(root, padding=framePadding)
@@ -63,7 +70,6 @@ delConfirmButton = ttk.Button(fDelete, text="Delete Contact", command=lambda: de
 delBackButton = ttk.Button(fDelete, text="Back to Main Menu", command=lambda: pageSwitch(pages.index(fMainMenu)))
 
 delNameEntry.grid(row=0, column=0, rowspan=2)
-delNameEntry.insert(index=4, string="Name")
 delConfirmButton.grid(row=0, column=1)
 delBackButton.grid(row=2, column=1)
 
@@ -76,7 +82,7 @@ listBackButton.grid(column=0, row=0)
 listListerButton = ttk.Button(fList, text="List Contacts", command=lambda: listContacts())
 listListerButton.grid(column=0, row=1)
 fListResponseTable = ttk.Frame(fList, padding=framePadding)
-fListResponseTable.grid(column=0, row=2)
+fListResponseTable.grid(column=0, row=2, columnspan=4)
 listResponseLabel = []
 
 # Search Page
@@ -84,18 +90,24 @@ listResponseLabel = []
 fSearch = ttk.Frame(root, padding=framePadding)
 
 searchNameEntry = ttk.Entry(fSearch, textvariable=name)
+searchNameLabel = ttk.Label(fSearch, text="Name: ")
 searchNumberEntry = ttk.Entry(fSearch, textvariable=number)
+searchNumberLabel = ttk.Label(fSearch, text="Phone Number:")
 searchEmailEntry = ttk.Entry(fSearch, textvariable=email)
+searchEmailLabel = ttk.Label(fSearch, text="Email Address:")
 searchBackButton = ttk.Button(fSearch, text="Back to Main Menu", command=lambda: pageSwitch(pages.index(fMainMenu)))
 searchButton = ttk.Button(fSearch, text="Search", command=lambda: searchContacts(name.get(), number.get(), email.get()))
 fSearchResult = ttk.Frame(fSearch, padding=framePadding)
 
-searchNameEntry.grid(column=0, row=0)
-searchNumberEntry.grid(column=0, row=1)
-searchEmailEntry.grid(column=0, row=2)
-searchButton.grid(column=1, row=1)
-searchBackButton.grid(column=1, row=3)
-fSearchResult.grid(column=0, row=4, columnspan=2)
+searchNameLabel.grid(column=0, row=0)
+searchNameEntry.grid(column=1, row=0)
+searchNumberLabel.grid(column=0, row=1)
+searchNumberEntry.grid(column=1, row=1)
+searchEmailLabel.grid(column=0, row=2)
+searchEmailEntry.grid(column=1, row=2)
+searchButton.grid(column=2, row=1)
+searchBackButton.grid(column=2, row=3)
+fSearchResult.grid(column=0, row=4, columnspan=4)
 searchResultLabel = ttk.Label(fSearchResult, text="")
 
 pages = [fMainMenu, fAdd, fDelete, fList, fSearch]
@@ -105,7 +117,7 @@ def addContact():
     contactdb.commit()
     
     addResponseLabel = ttk.Label(fAdd, text="Contact Added!")
-    addResponseLabel.grid(row=2, column=1)
+    addResponseLabel.grid(row=2, column=2)
     fAdd.after(sleeptime, lambda: addResponseLabel.grid_forget())
     
 def listContacts():
@@ -174,7 +186,9 @@ def pageSwitch(index):
         page.pack_forget()
     fListResponseTable.grid_forget()
     for label in listResponseLabel:
-        label.destroy()  
+        label.destroy() 
+    for var in stringvars:
+        var.set(value = "")
 
     pages[index].pack(expand=1)
 
