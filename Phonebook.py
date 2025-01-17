@@ -14,7 +14,7 @@ number = tk.StringVar()
 email = tk.StringVar()
 notes = tk.StringVar()
 framePadding = 20
-sleeptime = 10 * 100 # *100 to bring MS in Seconds with first int having the first place being in tenths of seconds
+sleeptime = 15 * 100 # *100 to bring MS in Seconds with first int having the first place being in tenths of seconds
 
 # Main Menu
 fMainMenu = ttk.Frame(root, padding=framePadding)
@@ -86,15 +86,13 @@ fSearch = ttk.Frame(root, padding=framePadding)
 searchNameEntry = ttk.Entry(fSearch, textvariable=name)
 searchNumberEntry = ttk.Entry(fSearch, textvariable=number)
 searchEmailEntry = ttk.Entry(fSearch, textvariable=email)
-searchNotesEntry = ttk.Entry(fSearch, textvariable=notes)
 searchBackButton = ttk.Button(fSearch, text="Back to Main Menu", command=lambda: pageSwitch(pages.index(fMainMenu)))
-searchButton = ttk.Button(fSearch, text="Search", command=lambda: searchContacts(name.get()))
+searchButton = ttk.Button(fSearch, text="Search", command=lambda: searchContacts(name.get(), number.get(), email.get()))
 fSearchResult = ttk.Frame(fSearch, padding=framePadding)
 
 searchNameEntry.grid(column=0, row=0)
 searchNumberEntry.grid(column=0, row=1)
 searchEmailEntry.grid(column=0, row=2)
-searchNotesEntry.grid(column=0, row=3)
 searchButton.grid(column=1, row=1)
 searchBackButton.grid(column=1, row=3)
 fSearchResult.grid(column=0, row=4, columnspan=2)
@@ -122,9 +120,19 @@ def listContacts():
             contactInfo.grid(column=listIndex, row=index)
             listResponseLabel.append(contactInfo)
 
-def searchContacts(name):
+def searchContacts(name, number, email):
     # TODO Add search sorting functions, search by other columns
-    searchResult = dbcursor.execute("SELECT * FROM contacts WHERE Name = ?", (name, ))
+    # If left blank, turn to any character, Which works only with like
+    if name == "":
+        name = "%"
+    if number == "":
+        number = "%"
+    if email == "":
+        email = "%"
+
+    searchQuery = f"""SELECT * FROM contacts WHERE name LIKE ? AND phone LIKE ? AND email LIKE ?"""
+    
+    searchResult = dbcursor.execute(searchQuery, (name, number, email))
     results = searchResult.fetchone()
     
     if results == None:
@@ -138,7 +146,7 @@ def searchContacts(name):
 
 def deleteContact():
     # TODO Make function to delete specified contact
-    dbcursor.execute("DELETE FROM contacts WHERE Name = ?", (name.get(), ))
+    dbcursor.execute("DELETE FROM contacts WHERE name = ?", (name.get(), ))
     contactdb.commit()
      
     delResponseLabel = ttk.Label(fDelete, text="Contact deleted!")
@@ -153,7 +161,7 @@ def editContact():
     email = input("New email: ")
     notes = input("New notes: ")
 
-    dbcursor.execute("UPDATE contacts SET Name=?, Phone=?, Email=?, Notes=? WHERE Name=?", (name, phone, email, notes, nameIndex))
+    dbcursor.execute("UPDATE contacts SET name=?, phone=?, email=?, notes=? WHERE name=?", (name, phone, email, notes, nameIndex))
     contactdb.commit()
 
 def save():
@@ -174,16 +182,16 @@ def pageSwitch(index):
 contactdb = sql.connect("contacts.db")
 dbcursor = contactdb.cursor()
 
-# SQL entry that tests and creates table
+# SQL that tests and creates table
 tableCreation = """CREATE TABLE IF NOT EXISTS contacts(
-                    Name TEXT,
-                    Phone TEXT,
-                    Email TEXT,
-                    Notes TEXT)"""
+                    name TEXT,
+                    phone TEXT,
+                    email TEXT,
+                    notes TEXT)"""
 dbcursor.execute(tableCreation)
-
-# /DB Setup
 
 # GUI Startpoint
 root.mainloop()
+
+contactdb.close()
 # TODO add column for more data function, make presentation prettier, etc.
