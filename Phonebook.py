@@ -22,35 +22,32 @@ sleeptime = 15 * 100 # *100 to bring MS in Seconds with first int having the fir
 fMainMenu = ttk.Frame(root, padding=framePadding)
 
 mainLabel = ttk.Label(fMainMenu, text="Hello, What would you like to do today?")
-addButton = ttk.Button(fMainMenu, text="Add contact", command=lambda: pageSwitch(pages.index(fAdd)))
-delButton = ttk.Button(fMainMenu, text="Delete contact", command=lambda: pageSwitch(pages.index(fDelete)))
-listButton = ttk.Button(fMainMenu, text="List contacts", command=lambda: pageSwitch(pages.index(fList)))
-searchButton = ttk.Button(fMainMenu, text="Search contacts", command=lambda: pageSwitch(pages.index(fSearch)))
-editButton = ttk.Button(fMainMenu, text="Edit contact", command=None)
+EntryAndDeletion = ttk.Button(fMainMenu, text="Contact Entry and Deletion", command=lambda: pageSwitch(pages.index(fCreateDelete)))
+displayAndSearch = ttk.Button(fMainMenu, text="List and Search Contacts", command=lambda: pageSwitch(pages.index(fDisplay)))
 
 mainLabel.grid(row=0, sticky="NS")
-addButton.grid(row=1, sticky="NS")
-delButton.grid(row=2, sticky="NS")
-listButton.grid(row=3, sticky="NS")
-searchButton.grid(row=4, sticky="NS")
-editButton.grid(row=5, sticky="NS")
+EntryAndDeletion.grid(row=1, sticky="NS")
+displayAndSearch.grid(row=2, sticky="NS")
 fMainMenu.pack(expand=1)
 
-# Add page
-fAdd = ttk.Frame(root, padding=framePadding)
+# Creation and Deletion page
+fCreateDelete = ttk.Frame(root, padding=framePadding)
 
-addNameEntry = ttk.Entry(fAdd, textvariable=name)
-addNameLabel = ttk.Label(fAdd, text="Name: ")
-addNumberEntry = ttk.Entry(fAdd, textvariable=number)
-addNumberLabel = ttk.Label(fAdd, text="Phone Number:")
-addEmailEntry = ttk.Entry(fAdd, textvariable=email)
-addEmailLabel = ttk.Label(fAdd, text="Email Address:")
-addNotesEntry = ttk.Entry(fAdd, textvariable=notes)
-addNotesLabel = ttk.Label(fAdd, text="Notes: ")
-addConfirmButton = ttk.Button(fAdd, text="Add Contact", command=lambda: addContact())
-deleteButton = ttk.Button(fAdd, text="Delete Contact", command=lambda: deleteContact())
-addBackButton = ttk.Button(fAdd, text="Back to Main Menu", command=lambda: pageSwitch(pages.index(fMainMenu)))
+addNameEntry = ttk.Entry(fCreateDelete, textvariable=name)
+addNameLabel = ttk.Label(fCreateDelete, text="Name: ")
+addNumberEntry = ttk.Entry(fCreateDelete, textvariable=number)
+addNumberLabel = ttk.Label(fCreateDelete, text="Phone Number:")
+addEmailEntry = ttk.Entry(fCreateDelete, textvariable=email)
+addEmailLabel = ttk.Label(fCreateDelete, text="Email Address:")
+addNotesEntry = ttk.Entry(fCreateDelete, textvariable=notes)
+addNotesLabel = ttk.Label(fCreateDelete, text="Notes: ")
 
+responseLabel = ttk.Label(fCreateDelete, text="")
+addButton = ttk.Button(fCreateDelete, text="Add Contact", command=lambda: addContact())
+deleteButton = ttk.Button(fCreateDelete, text="Delete Contact", command=lambda: deleteContact())
+addBackButton = ttk.Button(fCreateDelete, text="Back to Main Menu", command=lambda: pageSwitch(pages.index(fMainMenu)))
+
+# Grid info of Creation Deletion page
 addNameLabel.grid(column=0, row=0)
 addNumberLabel.grid(column=0, row=1)
 addEmailLabel.grid(column=0, row=2)
@@ -59,46 +56,26 @@ addNameEntry.grid(column=1, row=0)
 addNumberEntry.grid(column=1, row=1)
 addEmailEntry.grid(column=1, row=2)
 addNotesEntry.grid(column=1, row=3)
-addConfirmButton.grid(column=2, row=0)
+
+responseLabel.grid(row=2, column=2)
+addButton.grid(column=2, row=0)
 deleteButton.grid(column=2, row=1)
 addBackButton.grid(column=2, row=3)
 
-# Delete Page
-fDelete = ttk.Frame(root, padding=framePadding)
+# Display and Search Page
 
-delNameEntry = ttk.Entry(fDelete, textvariable=name)
-delConfirmButton = ttk.Button(fDelete, text="Delete Contact", command=lambda: deleteContact())
-delBackButton = ttk.Button(fDelete, text="Back to Main Menu", command=lambda: pageSwitch(pages.index(fMainMenu)))
+fDisplay = ttk.Frame(root, padding=framePadding)
 
-delNameEntry.grid(row=0, column=0, rowspan=2)
-delConfirmButton.grid(row=0, column=1)
-delBackButton.grid(row=2, column=1)
-
-# List Page
-
-fList = ttk.Frame(root, padding=framePadding)
-
-listBackButton = ttk.Button(fList, text="Back to Main Menu", command=lambda: pageSwitch(pages.index(fMainMenu)))
-listBackButton.grid(column=0, row=0)
-listListerButton = ttk.Button(fList, text="List Contacts", command=lambda: listContacts())
-listListerButton.grid(column=0, row=1)
-fListResponseTable = ttk.Frame(fList, padding=framePadding)
-fListResponseTable.grid(column=0, row=2, columnspan=4)
-listResponseLabel = []
-
-# Search Page
-
-fSearch = ttk.Frame(root, padding=framePadding)
-
-searchNameEntry = ttk.Entry(fSearch, textvariable=name)
-searchNameLabel = ttk.Label(fSearch, text="Name: ")
-searchNumberEntry = ttk.Entry(fSearch, textvariable=number)
-searchNumberLabel = ttk.Label(fSearch, text="Phone Number:")
-searchEmailEntry = ttk.Entry(fSearch, textvariable=email)
-searchEmailLabel = ttk.Label(fSearch, text="Email Address:")
-searchBackButton = ttk.Button(fSearch, text="Back to Main Menu", command=lambda: pageSwitch(pages.index(fMainMenu)))
-searchButton = ttk.Button(fSearch, text="Search", command=lambda: searchContacts(name.get(), number.get(), email.get()))
-fSearchResult = ttk.Frame(fSearch, padding=framePadding)
+searchNameEntry = ttk.Entry(fDisplay, textvariable=name)
+searchNameLabel = ttk.Label(fDisplay, text="Name: ")
+searchNumberEntry = ttk.Entry(fDisplay, textvariable=number)
+searchNumberLabel = ttk.Label(fDisplay, text="Phone Number:")
+searchEmailEntry = ttk.Entry(fDisplay, textvariable=email)
+searchEmailLabel = ttk.Label(fDisplay, text="Email Address:")
+searchBackButton = ttk.Button(fDisplay, text="Back to Main Menu", command=lambda: pageSwitch(pages.index(fMainMenu)))
+searchButton = ttk.Button(fDisplay, text="Search", command=lambda: searchContacts(name.get(), number.get(), email.get()))
+fSearchResult = ttk.Frame(fDisplay, padding=framePadding)
+listOfConInfo = []
 
 searchNameLabel.grid(column=0, row=0)
 searchNameEntry.grid(column=1, row=0)
@@ -109,32 +86,31 @@ searchEmailEntry.grid(column=1, row=2)
 searchButton.grid(column=2, row=1)
 searchBackButton.grid(column=2, row=3)
 fSearchResult.grid(column=0, row=4, columnspan=4)
-searchResultLabel = ttk.Label(fSearchResult, text="")
 
-pages = [fMainMenu, fAdd, fDelete, fList, fSearch]
+pages = [fMainMenu, fCreateDelete, fDisplay]
 
 def addContact():
     dbcursor.execute("INSERT INTO contacts VALUES (?, ?, ?, ?)", (name.get(), number.get(), email.get(), notes.get()))
     contactdb.commit()
-    
-    addResponseLabel = ttk.Label(fAdd, text="Contact Added!")
-    addResponseLabel.grid(row=2, column=2)
-    fAdd.after(sleeptime, lambda: addResponseLabel.grid_forget())
-    
-def listContacts():
-    # TODO Add functionality to sort and filter items
-    fListResponseTable.grid(column=0, row=2)
-    wholeTable = dbcursor.execute("SELECT * FROM contacts").fetchall()
-    for index, contact in enumerate(wholeTable):
-        for listIndex, item in enumerate(wholeTable[index]):
-            displayableContact = [*wholeTable[index]]
-            
-            contactInfo = ttk.Label(fListResponseTable, text=displayableContact[listIndex])
-            contactInfo.grid(column=listIndex, row=index)
-            listResponseLabel.append(contactInfo)
 
+    responseLabel.configure(text="Contact Added!")
+    responseLabel.update()
+    fCreateDelete.after(sleeptime, lambda: responseLabel.configure(text=""))
+    
+def deleteContact():
+    # TODO Make function to delete specified contact
+    dbcursor.execute("DELETE FROM contacts WHERE name = ?", (name.get(), ))
+    contactdb.commit()
+
+    responseLabel.configure(text="Contact Deleted!")
+    responseLabel.update()
+    fCreateDelete.after(sleeptime, lambda: responseLabel.configure(text=""))
+    
 def searchContacts(name, number, email):
     # TODO Add search sorting functions, search by other columns
+    for label in listOfConInfo:
+        label.destroy()
+
     # If left blank, turn to any character, Which works only with like
     if name == "":
         name = "%"
@@ -146,25 +122,17 @@ def searchContacts(name, number, email):
     searchQuery = f"""SELECT * FROM contacts WHERE name LIKE ? AND phone LIKE ? AND email LIKE ?"""
     
     searchResult = dbcursor.execute(searchQuery, (name, number, email))
-    results = searchResult.fetchone()
-    
-    if results == None:
-        searchResultLabel.configure(text="No Results")
-        searchResultLabel.update()    
+    results = searchResult.fetchall()
+
+    if results == []:
+        label = ttk.Label(fSearchResult, text="No results found")
+        fDisplay.after(sleeptime, lambda: label.destroy())
     else:
-        searchResultLabel.configure(text=results)
-        searchResultLabel.update()
-
-    searchResultLabel.grid(column=0, row=0)
-
-def deleteContact():
-    # TODO Make function to delete specified contact
-    dbcursor.execute("DELETE FROM contacts WHERE name = ?", (name.get(), ))
-    contactdb.commit()
-     
-    delResponseLabel = ttk.Label(fAdd, text="Contact deleted!")
-    delResponseLabel.grid(column=2, row=2)
-    fDelete.after(sleeptime, lambda: delResponseLabel.grid_forget())
+        for idx, contact in enumerate(results):
+            for idx2, info in enumerate(contact):
+                label = ttk.Label(fSearchResult, text=info)
+                label.grid(column=idx2, row=idx)
+                listOfConInfo.append(label)
 
 def editContact():
     # TODO FIX currently doesn't work
@@ -183,11 +151,11 @@ def save():
     dbcursor.close()
 
 def pageSwitch(index):
+    # Clearing things
     for page in pages:
         page.pack_forget()
-    fListResponseTable.grid_forget()
-    for label in listResponseLabel:
-        label.destroy() 
+    for label in listOfConInfo:
+        label.destroy()
     for var in stringvars:
         var.set(value = "")
 
