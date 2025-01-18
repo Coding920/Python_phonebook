@@ -25,10 +25,10 @@ mainLabel = ttk.Label(fMainMenu, text="Hello, What would you like to do today?")
 EntryAndDeletion = ttk.Button(fMainMenu, text="Contact Entry and Deletion", command=lambda: pageSwitch(pages.index(fCreateDelete)))
 displayAndSearch = ttk.Button(fMainMenu, text="List and Search Contacts", command=lambda: pageSwitch(pages.index(fDisplay)))
 
-mainLabel.grid(row=0, sticky="NS")
-EntryAndDeletion.grid(row=1, sticky="NS")
-displayAndSearch.grid(row=2, sticky="NS")
-fMainMenu.pack(expand=1)
+mainLabel.grid(row=0)
+EntryAndDeletion.grid(row=1)
+displayAndSearch.grid(row=2)
+fMainMenu.pack(expand=True, anchor="n")
 
 # Creation and Deletion page
 fCreateDelete = ttk.Frame(root, padding=framePadding)
@@ -47,7 +47,7 @@ addButton = ttk.Button(fCreateDelete, text="Add Contact", command=lambda: addCon
 deleteButton = ttk.Button(fCreateDelete, text="Delete Contact", command=lambda: deleteContact())
 addBackButton = ttk.Button(fCreateDelete, text="Back to Main Menu", command=lambda: pageSwitch(pages.index(fMainMenu)))
 
-# Grid info of Creation Deletion page
+# Grid info 
 addNameLabel.grid(column=0, row=0)
 addNumberLabel.grid(column=0, row=1)
 addEmailLabel.grid(column=0, row=2)
@@ -73,10 +73,11 @@ searchNumberLabel = ttk.Label(fDisplay, text="Phone Number:")
 searchEmailEntry = ttk.Entry(fDisplay, textvariable=email)
 searchEmailLabel = ttk.Label(fDisplay, text="Email Address:")
 searchBackButton = ttk.Button(fDisplay, text="Back to Main Menu", command=lambda: pageSwitch(pages.index(fMainMenu)))
-searchButton = ttk.Button(fDisplay, text="Search", command=lambda: searchContacts(name.get(), number.get(), email.get()))
+searchButton = ttk.Button(fDisplay, text="Search", command=lambda: displayContacts(name.get(), number.get(), email.get()))
 fSearchResult = ttk.Frame(fDisplay, padding=framePadding)
 listOfConInfo = []
 
+# Grid info
 searchNameLabel.grid(column=0, row=0)
 searchNameEntry.grid(column=1, row=0)
 searchNumberLabel.grid(column=0, row=1)
@@ -106,7 +107,7 @@ def deleteContact():
     responseLabel.update()
     fCreateDelete.after(sleeptime, lambda: responseLabel.configure(text=""))
     
-def searchContacts(name, number, email):
+def displayContacts(name, number, email):
     # TODO Add search sorting functions, search by other columns
     for label in listOfConInfo:
         label.destroy()
@@ -145,11 +146,6 @@ def editContact():
     dbcursor.execute("UPDATE contacts SET name=?, phone=?, email=?, notes=? WHERE name=?", (name, phone, email, notes, nameIndex))
     contactdb.commit()
 
-def save():
-    # TODO Determine if save function is neccesary, and how to better implement it 
-    contactdb.commit()
-    dbcursor.close()
-
 def pageSwitch(index):
     # Clearing things
     for page in pages:
@@ -159,7 +155,7 @@ def pageSwitch(index):
     for var in stringvars:
         var.set(value = "")
 
-    pages[index].pack(expand=1)
+    pages[index].pack(expand=True, anchor="n")
 
 # DB Setup
 contactdb = sql.connect("contacts.db")
@@ -176,5 +172,6 @@ dbcursor.execute(tableCreation)
 # GUI Startpoint
 root.mainloop()
 
+contactdb.commit()
 contactdb.close()
 # TODO add column for more data function, make presentation prettier, etc.
