@@ -4,7 +4,6 @@ import sqlite3 as sql
 import tkinter as tk 
 from tkinter import ttk
 
-# GUI Setup
 root = tk.Tk()
 root.title("Phonebook")
 # root.wm_iconphoto() Mess with for new window icon in top left
@@ -137,17 +136,6 @@ def displayContacts(name, number, email):
                 label.grid(column=idx2, row=idx)
                 listOfConInfo.append(label)
 
-def editContact():
-    # TODO FIX currently doesn't work
-    nameIndex = input("Who's contact would you like to change? ")
-    name = input("New name: ")
-    phone = input("New phone: ")
-    email = input("New email: ")
-    notes = input("New notes: ")
-
-    dbcursor.execute("UPDATE contacts SET name=?, phone=?, email=?, notes=? WHERE name=?", (name, phone, email, notes, nameIndex))
-    contactdb.commit()
-
 def pageSwitch(index):
     # Clearing things
     for page in pages:
@@ -177,3 +165,14 @@ root.mainloop()
 contactdb.commit()
 contactdb.close()
 # TODO add column for more data function, make presentation prettier, etc.
+
+# def editContact():
+#     # TODO FIX currently doesn't work
+#     nameIndex = input("Who's contact would you like to change? ")
+#     name = input("New name: ")
+#     phone = input("New phone: ")
+#     email = input("New email: ")
+#     notes = input("New notes: ")
+
+#     dbcursor.execute("UPDATE contacts SET name=?, phone=?, email=?, notes=? WHERE name=?", (name, phone, email, notes, nameIndex))
+#     contactdb.commit()
