@@ -7,6 +7,8 @@ from tkinter import ttk
 root = tk.Tk()
 root.title("Phonebook")
 # root.wm_iconphoto() Mess with for new window icon in top left
+root.columnconfigure(0, weight=1)
+root.rowconfigure(0, weight=1)
 
 # Variables
 name = tk.StringVar()
@@ -27,7 +29,8 @@ displayAndSearch = ttk.Button(fMainMenu, text="List and Search Contacts", comman
 mainLabel.grid(row=0)
 EntryAndDeletion.grid(row=1)
 displayAndSearch.grid(row=2)
-fMainMenu.pack(expand=True, anchor="n")
+fMainMenu.grid(sticky="nsew")
+fMainMenu.columnconfigure(0, weight=1)
 
 # Creation and Deletion page
 fCreateDelete = ttk.Frame(root, padding=framePadding)
@@ -139,13 +142,13 @@ def displayContacts(name, number, email):
 def pageSwitch(index):
     # Clearing things
     for page in pages:
-        page.pack_forget()
+        page.grid_forget()
     for label in listOfConInfo:
         label.destroy()
     for var in stringvars:
         var.set(value = "")
 
-    pages[index].pack(expand=True, anchor="n")
+    pages[index].grid(sticky="nsew")
 
 # DB Setup
 contactdb = sql.connect("contacts.db")
