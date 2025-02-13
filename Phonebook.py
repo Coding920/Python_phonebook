@@ -4,9 +4,21 @@ import sqlite3 as sql
 import tkinter as tk 
 from tkinter import ttk
 
+# DB Setup
+contactdb = sql.connect("contacts.db")
+dbcursor = contactdb.cursor()
+
+# SQL that tests and creates table
+tableCreation = """CREATE TABLE IF NOT EXISTS contacts(
+                    name TEXT,
+                    phone TEXT,
+                    email TEXT,
+                    notes TEXT)"""
+dbcursor.execute(tableCreation)
+
 root = tk.Tk()
 root.title("Phonebook")
-# root.wm_iconphoto() Mess with for new window icon in top left
+root.iconphoto(True, tk.PhotoImage(file="./images/phonebook.png"))
 root.columnconfigure(0, weight=1)
 root.rowconfigure(0, weight=1)
 
@@ -29,16 +41,18 @@ emailEntry = ttk.Entry(menu, textvariable=email)
 emailLabel = ttk.Label(menu, text="Email Address:")
 notesEntry = ttk.Entry(menu, textvariable=notes)
 notesLabel = ttk.Label(menu, text="Notes: ")
+
 listButton = ttk.Button(menu, text="List all", command=lambda: displayContacts("","",""))
 searchButton = ttk.Button(menu, text="Search", command=lambda: displayContacts(name.get(), number.get(), email.get()))
-
-responseLabel = ttk.Label(menu, text="")
 addButton = ttk.Button(menu, text="Add Contact", command=lambda: addContact())
 deleteButton = ttk.Button(menu, text="Delete Contact", command=lambda: deleteContact())
 
 # Search result table
-contactTable = ttk.Frame(root, padding=framePadding)
-listOfConInfo = []
+content = ttk.Frame(root, padding=framePadding)
+listForTable = tk.StringVar(value=dbcursor.execute(""" SELECT * FROM contacts """).fetchall())
+table = tk.Listbox(content, height=8, listvariable=listForTable, width=100)
+scroll = tk.Scrollbar(content, orient="vertical", command=table.yview, )
+table.configure(yscrollcommand=scroll.set)
 
 # Grid info 
 menu.grid(column=1, row=0)
@@ -46,40 +60,33 @@ nameLabel.grid(column=0, row=0)
 numberLabel.grid(column=0, row=1)
 emailLabel.grid(column=0, row=2)
 notesLabel.grid(column=0, row=3)
+
 nameEntry.grid(column=1, row=0)
 numberEntry.grid(column=1, row=1)
 emailEntry.grid(column=1, row=2)
 notesEntry.grid(column=1, row=3)
 
-listButton.grid(column=2, row=3)
-searchButton.grid(column=2, row=2)
-responseLabel.grid(row=2, column=3)
 addButton.grid(column=2, row=0)
 deleteButton.grid(column=2, row=1)
-contactTable.grid(column=0, row=0)
+searchButton.grid(column=2, row=2)
+listButton.grid(column=2, row=3)
+
+
+content.grid(column=0, row=0)
+table.grid(column=0, row=0) 
+scroll.grid(column=1, row=0)
+
 
 def addContact():
     dbcursor.execute("INSERT INTO contacts VALUES (?, ?, ?, ?)", (name.get(), number.get(), email.get(), notes.get()))
     contactdb.commit()
-
-    responseLabel.configure(text="Contact Added!")
-    responseLabel.update()
-    menu.after(sleeptime, lambda: responseLabel.configure(text=""))
     
 def deleteContact():
     # TODO Make function to delete specified contact
     dbcursor.execute("DELETE FROM contacts WHERE name = ?", (name.get(), ))
     contactdb.commit()
-
-    responseLabel.configure(text="Contact Deleted!")
-    responseLabel.update()
-    menu.after(sleeptime, lambda: responseLabel.configure(text=""))
     
 def displayContacts(name, number, email):
-    # TODO Add search sorting functions, search by other columns
-    for label in listOfConInfo:
-        label.destroy()
-
     # If left blank, turn to any character, Which works only with like
     if name == "":
         name = "%"
@@ -91,37 +98,18 @@ def displayContacts(name, number, email):
     searchQuery = f"""SELECT * FROM contacts WHERE name LIKE ? AND phone LIKE ? AND email LIKE ?"""
     
     searchResult = dbcursor.execute(searchQuery, (f"%{name}%", f"%{number}%", f"%{email}%"))
-    results = searchResult.fetchall()
+    listForTable.set(value=searchResult.fetchall())
+    table.update()
 
-    if results == []:
-        label = ttk.Label(contactTable, text="No results found")
-        menu.after(sleeptime, lambda: label.destroy())
-    else:
-        for idx, contact in enumerate(results):
-            for idx2, info in enumerate(contact):
-                label = ttk.Label(contactTable, text=info)
-                label.grid(column=idx2, row=idx)
-                listOfConInfo.append(label)
-
-
-# DB Setup
-contactdb = sql.connect("contacts.db")
-dbcursor = contactdb.cursor()
-
-# SQL that tests and creates table
-tableCreation = """CREATE TABLE IF NOT EXISTS contacts(
-                    name TEXT,
-                    phone TEXT,
-                    email TEXT,
-                    notes TEXT)"""
-dbcursor.execute(tableCreation)
 
 # GUI Startpoint
-displayContacts("","","")
 root.mainloop()
 
 contactdb.commit()
 contactdb.close()
+# End Code 
+
+
 # TODO add column for more data function, make presentation prettier, etc.
 
 # def editContact():
@@ -143,8 +131,8 @@ contactdb.close()
 #         label.destroy()
 #     for var in stringvars:
 #         var.set(value = "")
-
 #     pages[index].grid(sticky="nsew")
 
-# table = tk.Listbox(contactTable, height=8)
-# table.grid()
+# responseLabel.configure(text="Contact Added!")
+# responseLabel.update()
+# menu.after(sleeptime, lambda: responseLabel.configure(text=""))
