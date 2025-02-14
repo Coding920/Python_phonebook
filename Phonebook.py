@@ -51,7 +51,8 @@ deleteButton = ttk.Button(menu, text="Delete Contact", command=lambda: deleteCon
 content = ttk.Frame(root, padding=framePadding)
 listForTable = tk.StringVar(value=dbcursor.execute(""" SELECT * FROM contacts """).fetchall())
 table = tk.Listbox(content, height=8, listvariable=listForTable, width=100)
-scroll = tk.Scrollbar(content, orient="vertical", command=table.yview, )
+table.bind("<Double-1>", lambda _: contactWindow())
+scroll = tk.Scrollbar(content, orient="vertical", command=table.yview)
 table.configure(yscrollcommand=scroll.set)
 
 # Grid info 
@@ -74,7 +75,7 @@ listButton.grid(column=2, row=3)
 
 content.grid(column=0, row=0)
 table.grid(column=0, row=0) 
-scroll.grid(column=1, row=0)
+scroll.grid(column=1, row=0, sticky="NS")
 
 
 def addContact():
@@ -101,6 +102,9 @@ def displayContacts(name, number, email):
     listForTable.set(value=searchResult.fetchall())
     table.update()
 
+def contactWindow():
+    contactWindow = tk.Toplevel(root)
+    contactWindow.title("Set name of contact here")
 
 # GUI Startpoint
 root.mainloop()
