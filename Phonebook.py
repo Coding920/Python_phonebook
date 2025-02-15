@@ -19,19 +19,22 @@ dbcursor.execute(tableCreation)
 root = tk.Tk()
 root.title("Phonebook")
 root.iconphoto(True, tk.PhotoImage(file="./images/phonebook.png"))
-root.columnconfigure(0, weight=1)
-root.rowconfigure(0, weight=1)
+contactImage = tk.PhotoImage(file="./images/blank_person.png")
 
 # Variables
 name = tk.StringVar()
 number = tk.StringVar()
 email = tk.StringVar()
 notes = tk.StringVar()
+listForTable = tk.StringVar()
+lastQuery = []
 framePadding = 20
-sleeptime = 15 * 100 # *100 to bring MS in Seconds with first int having the first place being in tenths of seconds
+borderwidth = 5
+# *100 to bring MS in Seconds with first int having the first place being in tenths of seconds
+sleepTime = 15 * 100
 
 # Menu for listing, searching, adding, and deleting contacts
-menu = ttk.Frame(root, padding=framePadding)
+menu = ttk.Frame(root, padding=framePadding, borderwidth=borderwidth, relief="raised")
 
 nameEntry = ttk.Entry(menu, textvariable=name)
 nameLabel = ttk.Label(menu, text="Name: ")
@@ -42,20 +45,25 @@ emailLabel = ttk.Label(menu, text="Email Address:")
 notesEntry = ttk.Entry(menu, textvariable=notes)
 notesLabel = ttk.Label(menu, text="Notes: ")
 
-listButton = ttk.Button(menu, text="List all", command=lambda: displayContacts("","",""))
-searchButton = ttk.Button(menu, text="Search", command=lambda: displayContacts(name.get(), number.get(), email.get()))
+listButton = ttk.Button(menu, text="List all", command=lambda:\
+                         [getContacts("","",""), updateTable()])
+searchButton = ttk.Button(menu, text="Search", command=lambda: \
+                           (getContacts(name.get(), number.get(), email.get()), updateTable()))
 addButton = ttk.Button(menu, text="Add Contact", command=lambda: addContact())
 deleteButton = ttk.Button(menu, text="Delete Contact", command=lambda: deleteContact())
 
 # Search result table
 content = ttk.Frame(root, padding=framePadding)
-listForTable = tk.StringVar(value=dbcursor.execute(""" SELECT * FROM contacts """).fetchall())
 table = tk.Listbox(content, height=8, listvariable=listForTable, width=100)
-table.bind("<Double-1>", lambda _: contactWindow())
+table.bind("<Double-1>", lambda _: contactWindow(table.get(table.curselection())))
 scroll = tk.Scrollbar(content, orient="vertical", command=table.yview)
 table.configure(yscrollcommand=scroll.set)
 
 # Grid info 
+root.columnconfigure(0, weight=1)
+root.rowconfigure(0, weight=1)
+root.configure(padx=framePadding/2, pady=framePadding/2)
+
 menu.grid(column=1, row=0)
 nameLabel.grid(column=0, row=0)
 numberLabel.grid(column=0, row=1)
@@ -79,16 +87,21 @@ scroll.grid(column=1, row=0, sticky="NS")
 
 
 def addContact():
-    dbcursor.execute("INSERT INTO contacts VALUES (?, ?, ?, ?)", (name.get(), number.get(), email.get(), notes.get()))
+    dbcursor.execute("INSERT INTO contacts VALUES (?, ?, ?, ?)",\
+                      (name.get(), number.get(), email.get(), notes.get()))
     contactdb.commit()
+    getContacts("","","")
+    updateTable()
     
 def deleteContact():
     # TODO Make function to delete specified contact
     dbcursor.execute("DELETE FROM contacts WHERE name = ?", (name.get(), ))
     contactdb.commit()
+    getContacts("","","")
+    updateTable()
     
-def displayContacts(name, number, email):
-    # If left blank, turn to any character, Which works only with like
+def getContacts(name, number, email):
+    # If left blank, turn into a wildcard character
     if name == "":
         name = "%"
     if number == "":
@@ -96,36 +109,52 @@ def displayContacts(name, number, email):
     if email == "":
         email = "%"
 
-    searchQuery = f"""SELECT * FROM contacts WHERE name LIKE ? AND phone LIKE ? AND email LIKE ?"""
-    
-    searchResult = dbcursor.execute(searchQuery, (f"%{name}%", f"%{number}%", f"%{email}%"))
-    listForTable.set(value=searchResult.fetchall())
+    global lastQuery; lastQuery = dbcursor.execute(""" SELECT * FROM contacts 
+                                    WHERE name LIKE ? AND phone LIKE ? AND email LIKE ? """,\
+                                          (f"%{name}%", f"%{number}%", f"%{email}%"))
+    lastQuery = lastQuery.fetchall()
+
+def updateTable():
+    nameList = []
+    for contact in lastQuery:
+       nameList.append(contact[0])
+
+    listForTable.set(value=nameList)
     table.update()
 
-def contactWindow():
-    contactWindow = tk.Toplevel(root)
-    contactWindow.title("Set name of contact here")
+def contactWindow(name):
+    newWindow = tk.Toplevel(root)
+    newWindow.title(name)
+    newWindow.grid()
+    getContacts(name, "", "")
+    contactInfo = lastQuery[0]
+    frame = ttk.Frame(newWindow, padding=framePadding)
+    photoImage = ttk.Label(frame, image=contactImage)
+    firstName = ttk.Label(frame, text="first")
+    middleName = ttk.Label(frame, text="middle")
+    lastName = ttk.Label(frame, text="last")
+    fullName = ttk.Label(frame, text=contactInfo[0])
+
+    # Grid info
+    frame.grid()
+    photoImage.grid(sticky="e")
+    firstName.grid()
+    middleName.grid()
+    lastName.grid()
+    fullName.grid()
+    
+# Setting up listbox
+getContacts("","","")
+updateTable()
 
 # GUI Startpoint
 root.mainloop()
 
 contactdb.commit()
 contactdb.close()
-# End Code 
-
+# End Code
 
 # TODO add column for more data function, make presentation prettier, etc.
-
-# def editContact():
-#     # TODO FIX currently doesn't work
-#     nameIndex = input("Who's contact would you like to change? ")
-#     name = input("New name: ")
-#     phone = input("New phone: ")
-#     email = input("New email: ")
-#     notes = input("New notes: ")
-
-#     dbcursor.execute("UPDATE contacts SET name=?, phone=?, email=?, notes=? WHERE name=?", (name, phone, email, notes, nameIndex))
-#     contactdb.commit()
 
 # def pageSwitch(index):
 #     # Clearing things
@@ -136,7 +165,3 @@ contactdb.close()
 #     for var in stringvars:
 #         var.set(value = "")
 #     pages[index].grid(sticky="nsew")
-
-# responseLabel.configure(text="Contact Added!")
-# responseLabel.update()
-# menu.after(sleeptime, lambda: responseLabel.configure(text=""))
