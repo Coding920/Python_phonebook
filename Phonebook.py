@@ -18,10 +18,88 @@ tableCreation = """CREATE TABLE IF NOT EXISTS contacts(
                     email TEXT)"""
 dbcursor.execute(tableCreation)
 
+class listbox(ttk.Treeview):
+    def __init__(self: ttk.Treeview, parent: ttk.Frame | tk.Tk, dbcursor: sql.Cursor, createWindow: "function", **kwargs):
+        super().__init__(parent, **kwargs)
+        self.dbcursor = dbcursor
+        self.heading("photo", text="Pic")
+        self.heading("name", text="Name")
+        self.heading("number", text="Phone Number")
+        self.heading("email", text="Email Address")
+        self.bind("<Double-1>", lambda e: createWindow())
+        self.imageList = []
+        self.grid()
+
+    def updateContacts(self, firstName = "", middleName = "", lastName = "", number = "", email = ""):
+        self.clear()
+        query =  """ SELECT first_name, phone, email FROM contacts
+                    WHERE first_name LIKE ? 
+                        AND middle_name LIKE ?
+                        AND last_name LIKE ?
+                        AND phone LIKE ? 
+                        AND email LIKE ? """
+
+        info = (f"%{firstName}%", f"%{middleName}%", f"%{lastName}%", f"%{number}%", f"%{email}%")
+
+        results = self.dbcursor.execute(query, info)
+        results = results.fetchall()
+        
+        for contact in results:
+            contact = list(contact)
+            image = tk.PhotoImage(file="./images/phonebook.png")
+            self.imageList.append(image)
+            self.insert("", ["end"], values=contact, image=image)
+
+        self.update()
+
+    def clear(self):
+        for child in self.get_children():
+            self.delete(child)
+        self.imageList.clear()
+
 root = tk.Tk()
 root.title("Phonebook")
 root.iconphoto(True, tk.PhotoImage(file="./images/phonebook.png"))
 contactImage = tk.PhotoImage(file="./images/blank_person.png")
+imageList = []
+
+def addContact() -> None:
+    query = """ INSERT INTO contacts (first_name, middle_name, last_name, phone, email)
+                             VALUES (?, ?, ?, ?, ?) """
+    dbcursor.execute(query,\
+         (firstName.get(), middleName.get(), lastName.get(), number.get(), email.get()))
+    contactdb.commit()
+    contactList.updateContacts()
+    
+def deleteContact() -> None:
+    # TODO Make function to delete specified contact
+    dbcursor.execute("DELETE FROM contacts WHERE first_name = ?", (firstName.get(), ))
+    contactdb.commit()
+    contactList.updateContacts()
+
+def getInput() -> list:
+    return [firstName.get(), middleName.get(), lastName.get(), number.get(), email.get()]
+
+def contactWindow():
+    newWindow = tk.Toplevel(root)
+    newWindow.title("MLEM")
+    newWindow.grid()
+    # getContacts(firstName,"","","","")
+    contactInfo = lastQuery[0]
+    frame = ttk.Frame(newWindow, padding=framePadding)
+    photoImage = ttk.Label(frame, image=contactImage)
+    firstName = ttk.Label(frame, text="first")
+    middleName = ttk.Label(frame, text="middle")
+    lastName = ttk.Label(frame, text="last")
+    fullName = ttk.Label(frame, text=contactInfo[1])
+
+    # Grid info
+    frame.grid()
+    photoImage.grid(sticky="e")
+    firstName.grid()
+    middleName.grid()
+    lastName.grid()
+    fullName.grid()
 
 # Variables
 firstName = tk.StringVar()
@@ -48,20 +126,14 @@ numberLabel = ttk.Label(menu, text="Phone Number:")
 emailEntry = ttk.Entry(menu, textvariable=email)
 emailLabel = ttk.Label(menu, text="Email Address:")
 
-listButton = ttk.Button(menu, text="List all", command=lambda:\
-                         (getContacts("","","","",""), updateTable()))
-searchButton = ttk.Button(menu, text="Search", command=lambda: \
-    (getContacts(firstName.get(), middleName.get(), lastName.get(), number.get(), email.get())\
-                                                                              , updateTable()))
+listButton = ttk.Button(menu, text="List all", command=lambda: contactList.updateContacts())
+searchButton = ttk.Button(menu, text="Search", command=lambda: contactList.updateContacts(*getInput()))
 addButton = ttk.Button(menu, text="Add Contact", command=lambda: addContact())
 deleteButton = ttk.Button(menu, text="Delete Contact", command=lambda: deleteContact())
 
 # Search result table
 content = ttk.Frame(root, padding=framePadding)
-table = tk.Listbox(content, height=8, listvariable=listForTable, width=100)
-table.bind("<Double-1>", lambda _: contactWindow(table.get(table.curselection())))
-scroll = tk.Scrollbar(content, orient="vertical", command=table.yview)
-table.configure(yscrollcommand=scroll.set)
+contactList = listbox(content, dbcursor, contactWindow, columns=["photo","name","number","email"])
 
 # Grid info 
 root.columnconfigure(0, weight=1)
@@ -86,88 +158,16 @@ deleteButton.grid(column=2, row=1)
 searchButton.grid(column=2, row=2)
 listButton.grid(column=2, row=3)
 
-
+# Listbox 
 content.grid(column=0, row=0)
-table.grid(column=0, row=0) 
-scroll.grid(column=1, row=0, sticky="NS")
 
-
-def addContact():
-    query = """ INSERT INTO contacts (first_name, middle_name, last_name, phone, email)
-                             VALUES (?, ?, ?, ?, ?) """
-    dbcursor.execute(query,\
-         (firstName.get(), middleName.get(), lastName.get(), number.get(), email.get()))
-    contactdb.commit()
-    getContacts("","","","","")
-    updateTable()
-    
-def deleteContact():
-    # TODO Make function to delete specified contact
-    dbcursor.execute("DELETE FROM contacts WHERE first_name = ?", (firstName.get(), ))
-    contactdb.commit()
-    getContacts("","","","","")
-    updateTable()
-    
-def getContacts(firstName, middleName, lastName, number, email):
-    query =  """ SELECT * FROM contacts 
-                  WHERE first_name LIKE ? 
-                    AND middle_name LIKE ?
-                    AND last_name LIKE ?
-                    AND phone LIKE ? 
-                    AND email LIKE ? """
-
-    global lastQuery; lastQuery = dbcursor.execute(query,\
-                (f"%{firstName}%", f"%{middleName}%", f"%{lastName}%", f"%{number}%", f"%{email}%"))
-    lastQuery = lastQuery.fetchall()
-
-def updateTable():
-    nameList = []
-    for contact in lastQuery:
-       nameList.append(contact[1])
-
-    listForTable.set(value=nameList)
-    table.update()
-
-def contactWindow(firstName):
-    newWindow = tk.Toplevel(root)
-    newWindow.title(firstName)
-    newWindow.grid()
-    getContacts(firstName,"","","","")
-    contactInfo = lastQuery[0]
-    frame = ttk.Frame(newWindow, padding=framePadding)
-    photoImage = ttk.Label(frame, image=contactImage)
-    firstName = ttk.Label(frame, text="first")
-    middleName = ttk.Label(frame, text="middle")
-    lastName = ttk.Label(frame, text="last")
-    fullName = ttk.Label(frame, text=contactInfo[1])
-
-    # Grid info
-    frame.grid()
-    photoImage.grid(sticky="e")
-    firstName.grid()
-    middleName.grid()
-    lastName.grid()
-    fullName.grid()
-    
 # Setting up listbox
-getContacts("","","","","")
-updateTable()
+contactList.updateContacts()
 
 # GUI Startpoint
 root.mainloop()
 
 contactdb.commit()
 contactdb.close()
-# End Code
 
 # TODO add column for more data function, make presentation prettier, etc.
-
-# def pageSwitch(index):
-#     # Clearing things
-#     for page in pages:
-#         page.grid_forget()
-#     for label in listOfConInfo:
-#         label.destroy()
-#     for var in stringvars:
-#         var.set(value = "")
-#     pages[index].grid(sticky="nsew")
