@@ -1,7 +1,7 @@
-#This is a phonebook that allows easy access to a DB
+""" Gui program for accessing contacts """
 
 import sqlite3 as sql
-import tkinter as tk 
+import tkinter as tk
 from tkinter import ttk
 
 # DB Setup
@@ -19,20 +19,20 @@ tableCreation = """CREATE TABLE IF NOT EXISTS contacts(
 dbcursor.execute(tableCreation)
 
 class listbox(ttk.Treeview):
-    def __init__(self: ttk.Treeview, parent: ttk.Frame | tk.Tk, dbcursor: sql.Cursor, createWindow: "function", **kwargs):
-        super().__init__(parent, **kwargs)
+    def __init__(self, dbcursor: sql.Cursor, contactWindow: "function", master = None, *args, **kwargs):
+        super().__init__(master, *args, **kwargs)
         self.dbcursor = dbcursor
-        self.heading("photo", text="Pic")
+        self.heading("#0", text="")
         self.heading("name", text="Name")
         self.heading("number", text="Phone Number")
         self.heading("email", text="Email Address")
-        self.bind("<Double-1>", lambda e: createWindow())
+        self.bind("<Double-1>", lambda e: contactWindow(self.item(self.selection()[0], "tags")))
         self.imageList = []
         self.grid()
 
-    def updateContacts(self, firstName = "", middleName = "", lastName = "", number = "", email = ""):
+    def updateContacts(self, firstName="", middleName="", lastName="", number="", email=""):
         self.clear()
-        query =  """ SELECT first_name, phone, email FROM contacts
+        query =  """ SELECT * FROM contacts
                     WHERE first_name LIKE ? 
                         AND middle_name LIKE ?
                         AND last_name LIKE ?
@@ -43,13 +43,16 @@ class listbox(ttk.Treeview):
 
         results = self.dbcursor.execute(query, info)
         results = results.fetchall()
-        
+
         for contact in results:
             contact = list(contact)
-            image = tk.PhotoImage(file="./images/phonebook.png")
+            fullName = f"{contact[1]} {contact[2]} {contact[3]}"
+            del contact[1:4]
+            contact.insert(1, fullName)
+            image = tk.PhotoImage(file="./images/blank_person.png")
+            image = image.subsample(4)
             self.imageList.append(image)
-            self.insert("", ["end"], values=contact, image=image)
-
+            self.insert("", ["end"], values=contact[1:], image=image, tags=contact[0])
         self.update()
 
     def clear(self):
@@ -57,11 +60,34 @@ class listbox(ttk.Treeview):
             self.delete(child)
         self.imageList.clear()
 
+
+class newWindow(tk.Toplevel):
+    def __init__(self, id: int, master = None, *args, **kwargs):
+        super().__init__(master, *args, **kwargs)
+        self.id = id
+
+        query = """ SELECT * FROM contacts WHERE id = ? """
+        contact = dbcursor.execute(query, (id))
+        contact = contact.fetchall()
+        contact = contact[0]
+        name = f"{contact[1]} {contact[3]}"
+        self.title(name)
+
+        frame = ttk.Frame(self, padding=framePadding)
+        photoImage = ttk.Label(frame, image=contactImage)
+        firstName = ttk.Label(frame, text="first")
+        middleName = ttk.Label(frame, text="middle")
+        lastName = ttk.Label(frame, text="last")
+
+
 root = tk.Tk()
 root.title("Phonebook")
 root.iconphoto(True, tk.PhotoImage(file="./images/phonebook.png"))
 contactImage = tk.PhotoImage(file="./images/blank_person.png")
 imageList = []
+
+style = ttk.Style()
+style.configure("Treeview", rowheight=60)
 
 def addContact() -> None:
     query = """ INSERT INTO contacts (first_name, middle_name, last_name, phone, email)
@@ -80,18 +106,21 @@ def deleteContact() -> None:
 def getInput() -> list:
     return [firstName.get(), middleName.get(), lastName.get(), number.get(), email.get()]
 
-def contactWindow():
+def contactWindow(id: int):
+    query = """ SELECT * FROM contacts WHERE id = ? """
+    contact = dbcursor.execute(query, (id))
+    contact = contact.fetchall()
+    contact = contact[0]
+
     newWindow = tk.Toplevel(root)
-    newWindow.title("MLEM")
-    newWindow.grid()
-    # getContacts(firstName,"","","","")
-    contactInfo = lastQuery[0]
+    newWindow.title(contact[1])
+
     frame = ttk.Frame(newWindow, padding=framePadding)
     photoImage = ttk.Label(frame, image=contactImage)
     firstName = ttk.Label(frame, text="first")
     middleName = ttk.Label(frame, text="middle")
     lastName = ttk.Label(frame, text="last")
-    fullName = ttk.Label(frame, text=contactInfo[1])
+    # fullName = ttk.Label(frame, text=contactInfo[1])
 
     # Grid info
     frame.grid()
@@ -100,6 +129,15 @@ def contactWindow():
     middleName.grid()
     lastName.grid()
     fullName.grid()
+
+def createWindow(id: int):
+    contactWindow = newWindow(id)
+
+menubar = tk.Menu(root)
+root["menu"] = menubar
+menubar.add_command(label="Home", command=contactWindow)
+menubar.add_command(label="Add", command=lambda: createWindow(0))
+menubar.add_command(label="Settings", command=contactWindow)
 
 # Variables
 firstName = tk.StringVar()
@@ -133,9 +171,9 @@ deleteButton = ttk.Button(menu, text="Delete Contact", command=lambda: deleteCon
 
 # Search result table
 content = ttk.Frame(root, padding=framePadding)
-contactList = listbox(content, dbcursor, contactWindow, columns=["photo","name","number","email"])
+contactList = listbox(dbcursor, createWindow, content, columns=["name","number","email"], height=8)
 
-# Grid info 
+# Grid info - Menu
 root.columnconfigure(0, weight=1)
 root.rowconfigure(0, weight=1)
 root.configure(padx=framePadding/2, pady=framePadding/2)
@@ -158,7 +196,6 @@ deleteButton.grid(column=2, row=1)
 searchButton.grid(column=2, row=2)
 listButton.grid(column=2, row=3)
 
-# Listbox 
 content.grid(column=0, row=0)
 
 # Setting up listbox
