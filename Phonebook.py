@@ -70,14 +70,31 @@ class newWindow(tk.Toplevel):
         contact = dbcursor.execute(query, (id))
         contact = contact.fetchall()
         contact = contact[0]
-        name = f"{contact[1]} {contact[3]}"
-        self.title(name)
+        formatedName = f"{contact[1]} {contact[3]}"
+        self.title(formatedName)
 
+        photoImage = ttk.Label(self, image=contactImage)
         frame = ttk.Frame(self, padding=framePadding)
-        photoImage = ttk.Label(frame, image=contactImage)
-        firstName = ttk.Label(frame, text="first")
-        middleName = ttk.Label(frame, text="middle")
-        lastName = ttk.Label(frame, text="last")
+        firstLabel = ttk.Label(frame, text="First:")
+        middleLabel = ttk.Label(frame, text="Middle:")
+        lastLabel = ttk.Label(frame, text="Last:")
+        fullNameLabel = ttk.Label(frame, text="Full Name:")
+        firstName = ttk.Label(frame, text=contact[1])
+        middleName = ttk.Label(frame, text=contact[2])
+        lastName = ttk.Label(frame, text=contact[3])
+        fullName = ttk.Label(frame, text=formatedName)
+
+        # Grid
+        photoImage.grid(column=0, row=0)
+        frame.grid(column=1, row=0)
+        firstLabel.grid(column=0, row=0)
+        middleLabel.grid(column=0, row=1)
+        lastLabel.grid(column=0, row=2)
+        fullNameLabel.grid(column=0, row=3)
+        firstName.grid(column=1, row=0)
+        middleName.grid(column=1, row=1)
+        lastName.grid(column=1, row=2)
+        fullName.grid(column=1, row=3)
 
 
 root = tk.Tk()
@@ -128,7 +145,7 @@ def contactWindow(id: int):
     firstName.grid()
     middleName.grid()
     lastName.grid()
-    fullName.grid()
+    # fullName.grid()
 
 def createWindow(id: int):
     contactWindow = newWindow(id)
