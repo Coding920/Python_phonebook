@@ -39,6 +39,7 @@ EMAIL = 6
 FRAMEPADDING = 20
 BORDERWIDTH = 5
 
+file = ""
 firstName = tk.StringVar()
 middleName = tk.StringVar()
 lastName = tk.StringVar()
@@ -144,22 +145,45 @@ class newWindow(tk.Toplevel):
         lastName.grid(column=1, row=2)
         fullName.grid(column=1, row=3)
 
+def getInput() -> list:
+    return [firstName.get(), middleName.get(), lastName.get(), number.get(), email.get()]
+
 def addContact() -> None:
+    global file
+
     query = """ INSERT INTO contacts (image, first_name, middle_name, last_name, phone, email)
                              VALUES (?, ?, ?, ?, ?, ?) """
+
+    if file == "":
+        dbcursor.execute(query,\
+            ("", *getInput()))
+        lastId = dbcursor.lastrowid
+        contactImages[lastId] = contactPlaceholder
+        contactdb.commit()
+        contactList.updateContacts()
+        return
+
     dbcursor.execute(query,\
-         (firstName.get(), middleName.get(), lastName.get(), number.get(), email.get()))
+         ("", *getInput()))
+
+    lastId = dbcursor.lastrowid
+    newFile = open(f"./Contact_images/{firstName.get()}_{lastName.get()}{lastId}.png", "xb")
+    with open(file, "rb") as buf:
+        newFile.write(buf.read())
+    newFile.close()
+
+    contactImages[lastId] = tk.PhotoImage(file=newFile.name)
+
+    dbcursor.execute("UPDATE contacts SET image = ? WHERE id = ?", (newFile.name, lastId))
+
     contactdb.commit()
     contactList.updateContacts()
-    
+
 def deleteContact() -> None:
     # TODO Make function to delete specified contact
     dbcursor.execute("DELETE FROM contacts WHERE first_name = ?", (firstName.get(), ))
     contactdb.commit()
     contactList.updateContacts()
-
-def getInput() -> list:
-    return [firstName.get(), middleName.get(), lastName.get(), number.get(), email.get()]
 
 def createWindow(contactId: int):
     contactWindow = newWindow(contactId)
@@ -167,19 +191,12 @@ def createWindow(contactId: int):
 def addContactPage():
     addWindow = tk.Toplevel(root)
     photoImage = contactImages["placeholder"]
-    imageButton = ttk.Button(addWindow, command=lambda: imageSelect(), text="Select Image")
-    def imageSelect():
-        fileSelect = filedialog.LoadFileDialog(addWindow, title="Png image files\t\t (Directories are on left, files on right)")
-        file = fileSelect.go(pattern="*.png")
-        if file is not None:
-            file = open(file, "rb")
-            newFile = open("./Contact_images/THEBOMB.png", "xb")
-            for data in file:
-                newFile.write(data)
-            newFile.close()
-            file.close()
 
     image = ttk.Label(addWindow, image=photoImage)
+    imageButton = ttk.Button(addWindow,
+                             command=lambda: imageSelect(image, addWindow),
+                             text="Select Image")
+
     frame = ttk.Frame(addWindow, padding=FRAMEPADDING)
     firstLabel = ttk.Label(frame, text="First:")
     middleLabel = ttk.Label(frame, text="Middle:")
@@ -188,7 +205,10 @@ def addContactPage():
     firstNameEntry = ttk.Entry(frame, textvariable=firstName)
     middleNameEntry = ttk.Entry(frame, textvariable=middleName)
     lastNameEntry = ttk.Entry(frame, textvariable=lastName)
-    fullName = ttk.Label(frame, text="test")
+    fullName = ttk.Label(frame, text="Fix Me")
+    addButton = ttk.Button(frame,
+                           command=lambda: (addContact(), addWindow.destroy()),
+                           text="Add new contact")
 
     # Grid
     image.grid(column=0, row=0)
@@ -202,13 +222,27 @@ def addContactPage():
     middleNameEntry.grid(column=1, row=1)
     lastNameEntry.grid(column=1, row=2)
     fullName.grid(column=1, row=3)
+    addButton.grid(column=1, row=4)
+
+
+def imageSelect(image: ttk.Label, master = root):
+    global file
+    title = "Png image files\t\t (Directories are on left, files on right)"
+    file = filedialog.Open(master, title=title)
+    file = file.show(initialdir="/")
+    if file == "":
+        return
+
+    tempPhoto = tk.PhotoImage(file=file)
+    contactImages["temp"] = tempPhoto
+    image.configure(image=contactImages["temp"])
+    image.update()
 
 menubar = tk.Menu(root)
 root["menu"] = menubar
 menubar.add_command(label="Home", command=lambda: createWindow(1))
 menubar.add_command(label="Add", command=lambda: addContactPage())
 menubar.add_command(label="Settings", command=lambda: createWindow(1))
-
 
 # Menu for listing, searching, adding, and deleting contacts
 menu = ttk.Frame(root, padding=FRAMEPADDING, borderwidth=BORDERWIDTH, relief="raised")
@@ -227,7 +261,6 @@ emailLabel = ttk.Label(menu, text="Email Address:")
 listButton = ttk.Button(menu, text="List all", command=lambda: contactList.updateContacts())
 searchButton = ttk.Button(menu, text="Search", command=lambda:\
                            contactList.updateContacts(*getInput()))
-addButton = ttk.Button(menu, text="Add Contact", command=lambda: addContact())
 deleteButton = ttk.Button(menu, text="Delete Contact", command=lambda: deleteContact())
 
 # Search result table
@@ -252,7 +285,6 @@ lastNameEntry.grid(column=1, row=2)
 numberEntry.grid(column=1, row=3)
 emailEntry.grid(column=1, row=4)
 
-addButton.grid(column=2, row=0)
 deleteButton.grid(column=2, row=1)
 searchButton.grid(column=2, row=2)
 listButton.grid(column=2, row=3)
