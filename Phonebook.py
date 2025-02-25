@@ -1,4 +1,4 @@
-""" Gui program for accessing contacts """
+""" Gui program for accessing contacts based off of the Windows 7 program """
 
 import sqlite3 as sql
 import tkinter as tk
@@ -178,6 +178,7 @@ def addContact() -> None:
 
     contactdb.commit()
     contactList.updateContacts()
+    file = ""
 
 def deleteContact() -> None:
     # TODO Make function to delete specified contact
@@ -189,6 +190,7 @@ def createWindow(contactId: int):
     contactWindow = newWindow(contactId)
 
 def addContactPage():
+    global file; file = ""
     addWindow = tk.Toplevel(root)
     photoImage = contactImages["placeholder"]
 
@@ -201,10 +203,14 @@ def addContactPage():
     firstLabel = ttk.Label(frame, text="First:")
     middleLabel = ttk.Label(frame, text="Middle:")
     lastLabel = ttk.Label(frame, text="Last:")
+    numberLabel = ttk.Label(frame, text="Number: ")
+    emailLabel = ttk.Label(frame, text="Email: ")
     fullNameLabel = ttk.Label(frame, text="Full Name:")
     firstNameEntry = ttk.Entry(frame, textvariable=firstName)
     middleNameEntry = ttk.Entry(frame, textvariable=middleName)
     lastNameEntry = ttk.Entry(frame, textvariable=lastName)
+    numberEntry = ttk.Entry(frame, textvariable=number)
+    emailEntry = ttk.Entry(frame, textvariable=email)
     fullName = ttk.Label(frame, text="Fix Me")
     addButton = ttk.Button(frame,
                            command=lambda: (addContact(), addWindow.destroy()),
@@ -217,12 +223,17 @@ def addContactPage():
     firstLabel.grid(column=0, row=0)
     middleLabel.grid(column=0, row=1)
     lastLabel.grid(column=0, row=2)
-    fullNameLabel.grid(column=0, row=3)
+    numberLabel.grid(column=0, row=3)
+    emailLabel.grid(column=0, row=4)
+    fullNameLabel.grid(column=0, row=5)
+
     firstNameEntry.grid(column=1, row=0)
     middleNameEntry.grid(column=1, row=1)
     lastNameEntry.grid(column=1, row=2)
-    fullName.grid(column=1, row=3)
-    addButton.grid(column=1, row=4)
+    numberEntry.grid(column=1, row=3)
+    emailEntry.grid(column=1, row=4)
+    fullName.grid(column=1, row=5)
+    addButton.grid(column=1, row=6)
 
 
 def imageSelect(image: ttk.Label, master = root):
