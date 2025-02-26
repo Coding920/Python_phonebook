@@ -49,7 +49,6 @@ listForTable = tk.StringVar()
 lastQuery = []
 contactImages = {}
 contactImages["placeholder"] = contactPlaceholder
-deleteImage = tk.PhotoImage(file="./Contact_images/program_images/TrashCan.png")
 
 for contact in dbcursor.execute("SELECT * FROM contacts").fetchall():
     contactId = contact[0]
