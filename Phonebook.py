@@ -49,6 +49,7 @@ listForTable = tk.StringVar()
 lastQuery = []
 contactImages = {}
 contactImages["placeholder"] = contactPlaceholder
+deleteImage = tk.PhotoImage(file="./Contact_images/program_images/TrashCan.png")
 
 for contact in dbcursor.execute("SELECT * FROM contacts").fetchall():
     contactId = contact[0]
@@ -67,6 +68,7 @@ class listbox(ttk.Treeview):
         self.heading("name", text="Name")
         self.heading("number", text="Phone Number")
         self.heading("email", text="Email Address")
+        self.heading("delete", text="Delete Contact")
         self.bind("<Double-1>", lambda e: contactWindow(self.item(self.selection()[0], "tags")))
         self.grid()
 
@@ -98,6 +100,9 @@ class listbox(ttk.Treeview):
                          values=[fullName, contactInfo[PHONE], contactInfo[EMAIL]],\
                               image=image, tags=contactInfo[ID])
         self.update()
+
+    def deleteContact(self):
+        deleteContact(self.item(self.selection()[0], "tags"))
 
     def clear(self):
         for child in self.get_children():
@@ -180,9 +185,9 @@ def addContact() -> None:
     contactList.updateContacts()
     file = ""
 
-def deleteContact() -> None:
+def deleteContact(contactId: int) -> None:
     # TODO Make function to delete specified contact
-    dbcursor.execute("DELETE FROM contacts WHERE first_name = ?", (firstName.get(), ))
+    dbcursor.execute("DELETE FROM contacts WHERE id = ?", contactId)
     contactdb.commit()
     contactList.updateContacts()
 
@@ -272,11 +277,11 @@ emailLabel = ttk.Label(menu, text="Email Address:")
 listButton = ttk.Button(menu, text="List all", command=lambda: contactList.updateContacts())
 searchButton = ttk.Button(menu, text="Search", command=lambda:\
                            contactList.updateContacts(*getInput()))
-deleteButton = ttk.Button(menu, text="Delete Contact", command=lambda: deleteContact())
+deleteButton = ttk.Button(menu, text="Delete Contact", command=lambda: contactList.deleteContact())
 
 # Search result table
 content = ttk.Frame(root, padding=FRAMEPADDING)
-contactList = listbox(dbcursor, createWindow, content, columns=["name","number","email"], height=8)
+contactList = listbox(dbcursor, createWindow, content, columns=["name","number","email", "delete"], height=8)
 
 # Grid info - Menu
 root.columnconfigure(0, weight=1)
