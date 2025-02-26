@@ -67,7 +67,6 @@ class listbox(ttk.Treeview):
         self.heading("name", text="Name")
         self.heading("number", text="Phone Number")
         self.heading("email", text="Email Address")
-        self.heading("delete", text="Delete Contact")
         self.bind("<Double-1>", lambda e: contactWindow(self.item(self.selection()[0], "tags")))
         self.grid()
 
@@ -123,31 +122,41 @@ class newWindow(tk.Toplevel):
 
         contactId = int(contactId[0])
         if contactImages[contactId] == "No path":
-            photoImage = ttk.Label(self, image=contactPlaceholder)
+            self.photoImage = ttk.Label(self, image=contactPlaceholder)
         else:
-            photoImage = ttk.Label(self, image=contactImages[contactId])
+            self.photoImage = ttk.Label(self, image=contactImages[contactId])
             
-        frame = ttk.Frame(self, padding=FRAMEPADDING)
-        firstLabel = ttk.Label(frame, text="First:")
-        middleLabel = ttk.Label(frame, text="Middle:")
-        lastLabel = ttk.Label(frame, text="Last:")
-        fullNameLabel = ttk.Label(frame, text="Full Name:")
-        firstName = ttk.Label(frame, text=contactInfo[FIRSTNAME])
-        middleName = ttk.Label(frame, text=contactInfo[MIDDLENAME])
-        lastName = ttk.Label(frame, text=contactInfo[LASTNAME])
-        fullName = ttk.Label(frame, text=formatedName)
+        self.frame = ttk.Frame(self, padding=FRAMEPADDING)
+        self.firstLabel = ttk.Label(self.frame, text="First: ")
+        self.middleLabel = ttk.Label(self.frame, text="Middle: ")
+        self.lastLabel = ttk.Label(self.frame, text="Last: ")
+        self.fullNameLabel = ttk.Label(self.frame, text="Full Name: ")
+        self.numberLabel = ttk.Label(self.frame, text="Phone Number: ")
+        self.emailLabel = ttk.Label(self.frame, text="Email: ")
+
+        self.firstName = ttk.Label(self.frame, text=contactInfo[FIRSTNAME])
+        self.middleName = ttk.Label(self.frame, text=contactInfo[MIDDLENAME])
+        self.lastName = ttk.Label(self.frame, text=contactInfo[LASTNAME])
+        self.fullName = ttk.Label(self.frame, text=formatedName)
+        self.number = ttk.Label(self.frame, text=contactInfo[PHONE])
+        self.email = ttk.Label(self.frame, text=contactInfo[EMAIL])
 
         # Grid
-        photoImage.grid(column=0, row=0)
-        frame.grid(column=1, row=0)
-        firstLabel.grid(column=0, row=0)
-        middleLabel.grid(column=0, row=1)
-        lastLabel.grid(column=0, row=2)
-        fullNameLabel.grid(column=0, row=3)
-        firstName.grid(column=1, row=0)
-        middleName.grid(column=1, row=1)
-        lastName.grid(column=1, row=2)
-        fullName.grid(column=1, row=3)
+        self.photoImage.grid(column=0, row=0)
+        self.frame.grid(column=1, row=0)
+        self.firstLabel.grid(column=0, row=0)
+        self.middleLabel.grid(column=0, row=1)
+        self.lastLabel.grid(column=0, row=2)
+        self.fullNameLabel.grid(column=0, row=3)
+        self.numberLabel.grid(column=0, row=4)
+        self.emailLabel.grid(column=0, row=5)
+
+        self.firstName.grid(column=1, row=0)
+        self.middleName.grid(column=1, row=1)
+        self.lastName.grid(column=1, row=2)
+        self.fullName.grid(column=1, row=3)
+        self.number.grid(column=1, row=4)
+        self.email.grid(column=1, row=5)
 
 class blankPage(tk.Toplevel):
     def __init__(self, master = None):
@@ -176,9 +185,9 @@ class blankPage(tk.Toplevel):
         self.firstNameEntry = ttk.Entry(self.frame, textvariable=self.firstName)
         self.middleNameEntry = ttk.Entry(self.frame, textvariable=self.middleName)
         self.lastNameEntry = ttk.Entry(self.frame, textvariable=self.lastName)
+        self.fullName = ttk.Label(self.frame, text="")
         self.numberEntry = ttk.Entry(self.frame, textvariable=self.number)
         self.emailEntry = ttk.Entry(self.frame, textvariable=self.email)
-        self.fullName = ttk.Label(self.frame, text="")
         self.bind("<Key>", lambda e: self.updateFullName())
         self.addButton = ttk.Button(self.frame,
                             command=lambda: (addContact(), self.destroy()),
@@ -191,18 +200,18 @@ class blankPage(tk.Toplevel):
         self.firstLabel.grid(column=0, row=0)
         self.middleLabel.grid(column=0, row=1)
         self.lastLabel.grid(column=0, row=2)
-        self.numberLabel.grid(column=0, row=3)
-        self.emailLabel.grid(column=0, row=4)
-        self.fullNameLabel.grid(column=0, row=5)
+        self.fullNameLabel.grid(column=0, row=3)
+        self.numberLabel.grid(column=0, row=4)
+        self.emailLabel.grid(column=0, row=5)
 
         self.firstNameEntry.grid(column=1, row=0)
         self.middleNameEntry.grid(column=1, row=1)
         self.lastNameEntry.grid(column=1, row=2)
-        self.numberEntry.grid(column=1, row=3)
-        self.emailEntry.grid(column=1, row=4)
-        self.fullName.grid(column=1, row=5)
+        self.fullName.grid(column=1, row=3)
+        self.numberEntry.grid(column=1, row=4)
+        self.emailEntry.grid(column=1, row=5)
         self.addButton.grid(column=1, row=6)
-    
+
     def updateFullName(self):
         self.fullName.configure(text=f"{self.firstName.get()} {self.lastName.get()}")
         self.fullName.update()
@@ -269,8 +278,7 @@ def imageSelect(image: ttk.Label, master = root):
 
 menubar = tk.Menu(root)
 root["menu"] = menubar
-menubar.add_command(label="Home", command=lambda: createWindow(1))
-menubar.add_command(label="Add", command=lambda: addContactPage())
+menubar.add_command(label="Add Contact", command=lambda: addContactPage())
 menubar.add_command(label="Settings", command=lambda: createWindow(1))
 
 # Menu for listing, searching, adding, and deleting contacts
