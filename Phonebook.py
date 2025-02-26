@@ -149,6 +149,64 @@ class newWindow(tk.Toplevel):
         lastName.grid(column=1, row=2)
         fullName.grid(column=1, row=3)
 
+class blankPage(tk.Toplevel):
+    def __init__(self, master = None):
+        super().__init__(master)
+        self.file = ""
+        self.firstName = tk.StringVar()
+        self.middleName = tk.StringVar()
+        self.lastName = tk.StringVar()
+        self.number = tk.StringVar()
+        self.email = tk.StringVar()
+
+        photoImage = contactImages["placeholder"]
+
+        image = ttk.Label(self, image=photoImage)
+        imageButton = ttk.Button(self,
+                                command=lambda: imageSelect(image, self),
+                                text="Select Image")
+
+        self.frame = ttk.Frame(self, padding=FRAMEPADDING)
+        self.firstLabel = ttk.Label(self.frame, text="First:")
+        self.middleLabel = ttk.Label(self.frame, text="Middle:")
+        self.lastLabel = ttk.Label(self.frame, text="Last:")
+        self.numberLabel = ttk.Label(self.frame, text="Number: ")
+        self.emailLabel = ttk.Label(self.frame, text="Email: ")
+        self.fullNameLabel = ttk.Label(self.frame, text="Full Name:")
+        self.firstNameEntry = ttk.Entry(self.frame, textvariable=self.firstName)
+        self.middleNameEntry = ttk.Entry(self.frame, textvariable=self.middleName)
+        self.lastNameEntry = ttk.Entry(self.frame, textvariable=self.lastName)
+        self.numberEntry = ttk.Entry(self.frame, textvariable=self.number)
+        self.emailEntry = ttk.Entry(self.frame, textvariable=self.email)
+        self.fullName = ttk.Label(self.frame, text="")
+        self.bind("<Key>", lambda e: self.updateFullName())
+        self.addButton = ttk.Button(self.frame,
+                            command=lambda: (addContact(), self.destroy()),
+                            text="Add new contact")
+
+        # Grid
+        image.grid(column=0, row=0)
+        imageButton.grid(column=0, row=1)
+        self.frame.grid(column=1, row=0)
+        self.firstLabel.grid(column=0, row=0)
+        self.middleLabel.grid(column=0, row=1)
+        self.lastLabel.grid(column=0, row=2)
+        self.numberLabel.grid(column=0, row=3)
+        self.emailLabel.grid(column=0, row=4)
+        self.fullNameLabel.grid(column=0, row=5)
+
+        self.firstNameEntry.grid(column=1, row=0)
+        self.middleNameEntry.grid(column=1, row=1)
+        self.lastNameEntry.grid(column=1, row=2)
+        self.numberEntry.grid(column=1, row=3)
+        self.emailEntry.grid(column=1, row=4)
+        self.fullName.grid(column=1, row=5)
+        self.addButton.grid(column=1, row=6)
+    
+    def updateFullName(self):
+        self.fullName.configure(text=f"{self.firstName.get()} {self.lastName.get()}")
+        self.fullName.update()
+
 def getInput() -> list:
     return [firstName.get(), middleName.get(), lastName.get(), number.get(), email.get()]
 
@@ -194,51 +252,7 @@ def createWindow(contactId: int):
     contactWindow = newWindow(contactId)
 
 def addContactPage():
-    global file; file = ""
-    addWindow = tk.Toplevel(root)
-    photoImage = contactImages["placeholder"]
-
-    image = ttk.Label(addWindow, image=photoImage)
-    imageButton = ttk.Button(addWindow,
-                             command=lambda: imageSelect(image, addWindow),
-                             text="Select Image")
-
-    frame = ttk.Frame(addWindow, padding=FRAMEPADDING)
-    firstLabel = ttk.Label(frame, text="First:")
-    middleLabel = ttk.Label(frame, text="Middle:")
-    lastLabel = ttk.Label(frame, text="Last:")
-    numberLabel = ttk.Label(frame, text="Number: ")
-    emailLabel = ttk.Label(frame, text="Email: ")
-    fullNameLabel = ttk.Label(frame, text="Full Name:")
-    firstNameEntry = ttk.Entry(frame, textvariable=firstName)
-    middleNameEntry = ttk.Entry(frame, textvariable=middleName)
-    lastNameEntry = ttk.Entry(frame, textvariable=lastName)
-    numberEntry = ttk.Entry(frame, textvariable=number)
-    emailEntry = ttk.Entry(frame, textvariable=email)
-    fullName = ttk.Label(frame, text="Fix Me")
-    addButton = ttk.Button(frame,
-                           command=lambda: (addContact(), addWindow.destroy()),
-                           text="Add new contact")
-
-    # Grid
-    image.grid(column=0, row=0)
-    imageButton.grid(column=0, row=1)
-    frame.grid(column=1, row=0)
-    firstLabel.grid(column=0, row=0)
-    middleLabel.grid(column=0, row=1)
-    lastLabel.grid(column=0, row=2)
-    numberLabel.grid(column=0, row=3)
-    emailLabel.grid(column=0, row=4)
-    fullNameLabel.grid(column=0, row=5)
-
-    firstNameEntry.grid(column=1, row=0)
-    middleNameEntry.grid(column=1, row=1)
-    lastNameEntry.grid(column=1, row=2)
-    numberEntry.grid(column=1, row=3)
-    emailEntry.grid(column=1, row=4)
-    fullName.grid(column=1, row=5)
-    addButton.grid(column=1, row=6)
-
+    addPage = blankPage()
 
 def imageSelect(image: ttk.Label, master = root):
     global file
