@@ -23,7 +23,6 @@ dbcursor.execute(tableCreation)
 root = tk.Tk()
 root.title("Phonebook")
 root.iconphoto(True, tk.PhotoImage(file="./Contact_images/program_images/phonebook.png"))
-contactPlaceholder = tk.PhotoImage(file="./Contact_images/program_images/blank_person.png")
 style = ttk.Style()
 style.configure("Treeview", rowheight=60)
 
@@ -48,7 +47,7 @@ email = tk.StringVar()
 listForTable = tk.StringVar()
 lastQuery = []
 contactImages = {}
-contactImages["placeholder"] = contactPlaceholder
+contactImages["placeholder"] = tk.PhotoImage(file="./Contact_images/program_images/blank_person.png")
 
 for contact in dbcursor.execute("SELECT * FROM contacts").fetchall():
     contactId = contact[0]
@@ -56,6 +55,13 @@ for contact in dbcursor.execute("SELECT * FROM contacts").fetchall():
         contactImages[contactId] = tk.PhotoImage(file=contact[PATH])
     else:
         contactImages[contactId] = "No path"
+
+def updateImages(key = "", value = "") -> dict:
+    global contactImages
+    if not key or not value:
+        return contactImages
+    contactImages[key] = value
+    return contactImages
 
 class listbox(ttk.Treeview):
     def __init__(self, dbcursor: sql.Cursor, contactWindow: "function", master = None,\
@@ -108,25 +114,40 @@ class listbox(ttk.Treeview):
         self.imageList.clear()
 
 
-class newWindow(tk.Toplevel):
-    def __init__(self, contactId: int, master = None, *args, **kwargs):
+class displayerPage(tk.Toplevel):
+    """ Display page for contacts. Normally a static page but
+            with the edit button, it can be used to edit contacts """
+
+    def __init__(self, contactId: int, dbcursor: sql.Cursor, *args, master = None, **kwargs):
         super().__init__(master, *args, **kwargs)
-        self.contactId = contactId
+        # Variables
+        self.contactId = int(contactId[0])
+        self.dbcursor = dbcursor
+        self.file = ""
+        self.contactImages = updateImages()
+        self.first = tk.StringVar()
+        self.middle = tk.StringVar()
+        self.last = tk.StringVar()
+        self.numberVar = tk.StringVar()
+        self.emailVar = tk.StringVar()
 
         query = """ SELECT * FROM contacts WHERE id = ? """
         contactInfo = dbcursor.execute(query, (contactId))
         contactInfo = contactInfo.fetchall()
+        self.contactInfo = contactInfo[0]
         contactInfo = contactInfo[0]
+
         formatedName = f"{contactInfo[FIRSTNAME]} {contactInfo[LASTNAME]}"
         self.title(formatedName)
 
-        contactId = int(contactId[0])
-        if contactImages[contactId] == "No path":
-            self.photoImage = ttk.Label(self, image=contactPlaceholder)
+        if self.contactImages[self.contactId] == "No path":
+            self.image = ttk.Label(self, image=self.contactImages["placeholder"])
         else:
-            self.photoImage = ttk.Label(self, image=contactImages[contactId])
-            
+            self.image = ttk.Label(self, image=self.contactImages[self.contactId])
+
+        # Static side of Gui
         self.frame = ttk.Frame(self, padding=FRAMEPADDING)
+        self.editButton = ttk.Button(self.frame, text="Edit Contact", command=lambda: self.editContact())
         self.firstLabel = ttk.Label(self.frame, text="First: ")
         self.middleLabel = ttk.Label(self.frame, text="Middle: ")
         self.lastLabel = ttk.Label(self.frame, text="Last: ")
@@ -141,22 +162,152 @@ class newWindow(tk.Toplevel):
         self.number = ttk.Label(self.frame, text=contactInfo[PHONE])
         self.email = ttk.Label(self.frame, text=contactInfo[EMAIL])
 
-        # Grid
-        self.photoImage.grid(column=0, row=0)
-        self.frame.grid(column=1, row=0)
-        self.firstLabel.grid(column=0, row=0)
-        self.middleLabel.grid(column=0, row=1)
-        self.lastLabel.grid(column=0, row=2)
-        self.fullNameLabel.grid(column=0, row=3)
-        self.numberLabel.grid(column=0, row=4)
-        self.emailLabel.grid(column=0, row=5)
+        self.staticGui: list[tk.Widget] = [self.editButton, self.firstName, self.middleName,
+                                            self.lastName, self.number, self.email]
 
-        self.firstName.grid(column=1, row=0)
-        self.middleName.grid(column=1, row=1)
-        self.lastName.grid(column=1, row=2)
-        self.fullName.grid(column=1, row=3)
-        self.number.grid(column=1, row=4)
-        self.email.grid(column=1, row=5)
+        # Editing side of Gui
+        self.imageButton = ttk.Button(self,
+                                command=lambda: self.imageSelect(),
+                                text="Select Image")
+
+        self.exitButton = ttk.Button(self.frame, text="Don't save", command=lambda: self.exitEdit())
+        self.saveButton = ttk.Button(self.frame, text="Save Contact", command=lambda: [self.save(), self.exitEdit()])
+        self.firstNameIn = ttk.Entry(self.frame, textvariable=self.first)
+        self.middleNameIn = ttk.Entry(self.frame, textvariable=self.middle)
+        self.lastNameIn = ttk.Entry(self.frame, textvariable=self.last)
+        self.numberIn = ttk.Entry(self.frame, textvariable=self.numberVar)
+        self.emailIn = ttk.Entry(self.frame, textvariable=self.emailVar)
+
+        self.editGui: list[tk.Widget] = [self.imageButton, self.exitButton, self.saveButton,
+                                        self.firstNameIn, self.middleNameIn, self.lastNameIn,
+                                        self.numberIn, self.emailIn]
+
+        # Grid
+        self.image.grid(column=0, row=0)
+        self.frame.grid(column=1, row=0)
+        self.firstLabel.grid(column=0, row=1)
+        self.middleLabel.grid(column=0, row=2)
+        self.lastLabel.grid(column=0, row=3)
+        self.fullNameLabel.grid(column=0, row=4)
+        self.numberLabel.grid(column=0, row=5)
+        self.emailLabel.grid(column=0, row=6)
+
+        self.exitButton.grid(column=0, row=0)
+        self.saveButton.grid(column=1, row=0)
+        self.editButton.grid(column=1, row=0)
+        self.firstName.grid(column=1, row=1)
+        self.firstNameIn.grid(column=1, row=1)
+        self.middleName.grid(column=1, row=2)
+        self.middleNameIn.grid(column=1, row=2)
+        self.lastName.grid(column=1, row=3)
+        self.lastNameIn.grid(column=1, row=3)
+        self.fullName.grid(column=1, row=4)
+        self.number.grid(column=1, row=5)
+        self.numberIn.grid(column=1, row=5)
+        self.email.grid(column=1, row=6)
+        self.emailIn.grid(column=1, row=6)
+
+        # Placed Grid Info and then removed edit so that the col and row data only need put in once
+        for item in self.editGui:
+            item.grid_remove()
+
+    def editContact(self):
+        """ Puts window into edit mode. Removes everything from the entry boxes 
+            and then replaces it with upto date info. Also binds key presses to update fullname"""
+
+        # Clears file to prevent an old file from being held from a previous edit
+        self.file = ""
+        for component in self.staticGui:
+            component.grid_remove()
+
+        self.firstNameIn.delete(0, tk.END)
+        self.middleNameIn.delete(0, tk.END)
+        self.lastNameIn.delete(0, tk.END)
+        self.numberIn.delete(0, tk.END)
+        self.emailIn.delete(0, tk.END)
+
+        self.firstNameIn.insert(0, self.contactInfo[FIRSTNAME])
+        self.middleNameIn.insert(0, self.contactInfo[MIDDLENAME])
+        self.lastNameIn.insert(0, self.contactInfo[LASTNAME])
+        self.numberIn.insert(0, self.contactInfo[PHONE])
+        self.emailIn.insert(0, self.contactInfo[EMAIL])
+
+        self.bind("<Key>", lambda e: self.updateFullName())
+
+        for component in self.editGui:
+            component.grid()
+
+    def save(self):
+        """ Updates sql table with new contact info and saves images 
+                into the contact_images folder """
+
+        query = """ UPDATE contacts SET
+                    image = ?,
+                    first_name = ?,
+                    middle_name = ?, 
+                    last_name = ?, 
+                    phone = ?, 
+                    email = ?
+                    WHERE id = ? """
+
+        if self.file == "":
+            self.dbcursor.execute(query, (self.file, *self.getInput(), self.contactId))
+            contactList.updateContacts()
+            return
+
+        newPath = f"./Contact_images/{self.first.get()}_{self.last.get()}{self.contactId}.png"
+
+        # Either create new file or write over the old one
+        try:
+            newFile = open(newPath, "xb")
+        except FileExistsError:
+            newFile = open(newPath, "wb")
+
+        # Copying of photo
+        with open(self.file, "rb") as buf:
+            newFile.write(buf.read())
+        newFile.close()
+
+        self.contactImages = updateImages(self.contactId, tk.PhotoImage(file=newPath))
+        self.dbcursor.execute(query, (newPath, *self.getInput(), self.contactId))
+        contactList.updateContacts()
+
+    def exitEdit(self):
+        """ Takes window out of edit mode and updates static side Gui
+            to be current with possibly updated info. Also unbinds key press"""
+
+        for component in self.editGui:
+            component.grid_remove()
+
+        contactInfo = self.dbcursor.execute("SELECT * FROM contacts WHERE id = ?", (self.contactId,))
+        contactInfo = contactInfo.fetchall()[0]
+
+        for component in self.staticGui:
+            component.grid()
+
+        self.unbind("<Key>")
+
+    def imageSelect(self):
+        """ Updates self.file to selected file and 
+        updates the temp image in self.contactImages """
+
+        self.file = filedialog.Open(self, title="Png image files")
+        self.file = self.file.show(initialdir="~") # ~ is Home dir
+        if self.file == "":
+            return
+
+        self.contactImages = updateImages("temp", tk.PhotoImage(file=self.file))
+        self.image.configure(image=self.contactImages["temp"])
+        self.image.update()
+
+    def updateFullName(self):
+        self.fullName.configure(text=f"{self.first.get()} {self.last.get()}")
+        self.fullName.update()
+
+    def getInput(self) -> list:
+        return [self.first.get(), self.middle.get(), self.last.get(),\
+                self.numberVar.get(), self.emailVar.get()]
+
 
 class blankPage(tk.Toplevel):
     def __init__(self, master = None):
@@ -170,9 +321,9 @@ class blankPage(tk.Toplevel):
 
         photoImage = contactImages["placeholder"]
 
-        image = ttk.Label(self, image=photoImage)
+        self.image = ttk.Label(self, image=photoImage)
         imageButton = ttk.Button(self,
-                                command=lambda: imageSelect(image, self),
+                                command=lambda: self.imageSelect(),
                                 text="Select Image")
 
         self.frame = ttk.Frame(self, padding=FRAMEPADDING)
@@ -194,7 +345,7 @@ class blankPage(tk.Toplevel):
                             text="Add new contact")
 
         # Grid
-        image.grid(column=0, row=0)
+        self.image.grid(column=0, row=0)
         imageButton.grid(column=0, row=1)
         self.frame.grid(column=1, row=0)
         self.firstLabel.grid(column=0, row=0)
@@ -216,6 +367,20 @@ class blankPage(tk.Toplevel):
         self.fullName.configure(text=f"{self.firstName.get()} {self.lastName.get()}")
         self.fullName.update()
 
+    def imageSelect(self):
+        global contactImages
+        title = "Png image files"
+        self.file = filedialog.Open(self, title=title)
+        self.file = self.file.show(initialdir="/")
+        if self.file == "":
+            return
+
+        tempPhoto = tk.PhotoImage(file=self.file)
+        contactImages["temp"] = tempPhoto
+        self.image.configure(image=contactImages["temp"])
+        self.image.update()
+
+
 def getInput() -> list:
     return [firstName.get(), middleName.get(), lastName.get(), number.get(), email.get()]
 
@@ -229,7 +394,7 @@ def addContact() -> None:
         dbcursor.execute(query,\
             ("", *getInput()))
         lastId = dbcursor.lastrowid
-        contactImages[lastId] = contactPlaceholder
+        contactImages[lastId] = contactImages["placeholder"]
         contactdb.commit()
         contactList.updateContacts()
         return
@@ -258,23 +423,10 @@ def deleteContact(contactId: int) -> None:
     contactList.updateContacts()
 
 def createWindow(contactId: int):
-    contactWindow = newWindow(contactId)
+    contactWindow = displayerPage(contactId, dbcursor)
 
 def addContactPage():
     addPage = blankPage()
-
-def imageSelect(image: ttk.Label, master = root):
-    global file
-    title = "Png image files\t\t (Directories are on left, files on right)"
-    file = filedialog.Open(master, title=title)
-    file = file.show(initialdir="/")
-    if file == "":
-        return
-
-    tempPhoto = tk.PhotoImage(file=file)
-    contactImages["temp"] = tempPhoto
-    image.configure(image=contactImages["temp"])
-    image.update()
 
 menubar = tk.Menu(root)
 root["menu"] = menubar
