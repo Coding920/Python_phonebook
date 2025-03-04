@@ -265,10 +265,10 @@ class displayerPage(tk.Toplevel):
             contactList.updateContacts()
             return
 
-        newFilePath = copyImage()
+        newFilePath = copyImage(self.file, self.first.get(), self.last.get(), self.contactId)
 
         self.contactImages = updateImages(self.contactId, tk.PhotoImage(file=newFilePath))
-        self.dbcursor.execute(query, (newPath, *self.getInput(), self.contactId))
+        self.dbcursor.execute(query, (newFilePath, *self.getInput(), self.contactId))
         contactList.updateContacts()
 
     def exitEdit(self):
@@ -281,7 +281,15 @@ class displayerPage(tk.Toplevel):
         contactInfo = self.dbcursor.execute("SELECT * FROM contacts WHERE id = ?", (self.contactId,))
         contactInfo = contactInfo.fetchall()[0]
 
+        self.firstName.configure(text=contactInfo[FIRSTNAME])
+        self.middleName.configure(text=contactInfo[MIDDLENAME])
+        self.lastName.configure(text=contactInfo[LASTNAME])
+        self.fullName.configure(text=f"{contactInfo[FIRSTNAME]} {contactInfo[LASTNAME]}")
+        self.number.configure(text=contactInfo[PHONE])
+        self.email.configure(text=contactInfo[EMAIL])
+
         for component in self.staticGui:
+            component.update()
             component.grid()
 
         self.unbind("<Key>")
