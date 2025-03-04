@@ -404,7 +404,7 @@ def addContact(file, firstName, middleName, lastName, number, email) -> None:
     if file == "":
         dbcursor.execute(query, (file, firstName, middleName, lastName, number, email))
         lastId = dbcursor.lastrowid
-        contactImages[lastId] = contactImages["placeholder"]
+        updateImages(lastId, contactImages["placeholder"])
         contactdb.commit()
         contactList.updateContacts()
         return
@@ -413,6 +413,8 @@ def addContact(file, firstName, middleName, lastName, number, email) -> None:
 
     lastId = dbcursor.lastrowid
     newFilePath = copyImage(file, firstName, lastName, lastId)
+
+    updateImages(lastId, tk.PhotoImage(file=newFilePath)) # Fix here
 
     dbcursor.execute("UPDATE contacts SET image = ? WHERE id = ?", (newFilePath, lastId))
 
