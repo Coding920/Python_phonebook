@@ -265,20 +265,9 @@ class displayerPage(tk.Toplevel):
             contactList.updateContacts()
             return
 
-        newPath = f"./Contact_images/{self.first.get()}_{self.last.get()}{self.contactId}.png"
+        newFilePath = copyImage()
 
-        # Either create new file or write over the old one
-        try:
-            newFile = open(newPath, "xb")
-        except FileExistsError:
-            newFile = open(newPath, "wb")
-
-        # Copying of photo
-        with open(self.file, "rb") as buf:
-            newFile.write(buf.read())
-        newFile.close()
-
-        self.contactImages = updateImages(self.contactId, tk.PhotoImage(file=newPath))
+        self.contactImages = updateImages(self.contactId, tk.PhotoImage(file=newFilePath))
         self.dbcursor.execute(query, (newPath, *self.getInput(), self.contactId))
         contactList.updateContacts()
 
@@ -323,15 +312,14 @@ class blankPage(tk.Toplevel):
     def __init__(self, master = None):
         super().__init__(master)
         self.file = ""
+        self.tempImage = None
         self.firstName = tk.StringVar()
         self.middleName = tk.StringVar()
         self.lastName = tk.StringVar()
         self.number = tk.StringVar()
         self.email = tk.StringVar()
 
-        photoImage = contactImages["placeholder"]
-
-        self.image = ttk.Label(self, image=photoImage)
+        self.image = ttk.Label(self, image=contactImages["placeholder"])
         imageButton = ttk.Button(self,
                                 command=lambda: self.imageSelect(),
                                 text="Select Image")
@@ -351,7 +339,7 @@ class blankPage(tk.Toplevel):
         self.emailEntry = ttk.Entry(self.frame, textvariable=self.email)
         self.bind("<Key>", lambda e: self.updateFullName())
         self.addButton = ttk.Button(self.frame,
-                            command=lambda: (addContact(), self.destroy()),
+                            command=lambda: (self.addContact(), self.destroy()),
                             text="Add new contact")
 
         # Grid
@@ -373,61 +361,72 @@ class blankPage(tk.Toplevel):
         self.emailEntry.grid(column=1, row=5)
         self.addButton.grid(column=1, row=6)
 
-    def updateFullName(self):
-        self.fullName.configure(text=f"{self.firstName.get()} {self.lastName.get()}")
-        self.fullName.update()
-
     def imageSelect(self):
-        global contactImages
-        title = "Png image files"
-        self.file = filedialog.Open(self, title=title)
+        """ Updates self.file to selected file and 
+        updates the temp image in self.contactImages """
+
+        self.file = filedialog.Open(self, title="Png image files")
         self.file = self.file.show(initialdir="/")
         if self.file == "":
             return
 
-        tempPhoto = tk.PhotoImage(file=self.file)
-        contactImages["temp"] = tempPhoto
-        self.image.configure(image=contactImages["temp"])
+        self.tempImage = tk.PhotoImage(file=self.file)
+        self.image.configure(image=self.tempImage)
         self.image.update()
+
+    def addContact(self):
+        addContact(*self.getInput())
+
+    def updateFullName(self):
+        self.fullName.configure(text=f"{self.firstName.get()} {self.lastName.get()}")
+        self.fullName.update()
+
+    def getInput(self) -> list:
+        return [self.file, self.firstName.get(), self.middleName.get(), self.lastName.get(),
+                self.number.get(), self.email.get()]
 
 
 def getInput() -> list:
     return [firstName.get(), middleName.get(), lastName.get(), number.get(), email.get()]
 
-def addContact() -> None:
-    global file
-
+def addContact(file, firstName, middleName, lastName, number, email) -> None:
     query = """ INSERT INTO contacts (image, first_name, middle_name, last_name, phone, email)
                              VALUES (?, ?, ?, ?, ?, ?) """
 
     if file == "":
-        dbcursor.execute(query,\
-            ("", *getInput()))
+        dbcursor.execute(query, (file, firstName, middleName, lastName, number, email))
         lastId = dbcursor.lastrowid
         contactImages[lastId] = contactImages["placeholder"]
         contactdb.commit()
         contactList.updateContacts()
         return
 
-    dbcursor.execute(query,\
-         ("", *getInput()))
+    dbcursor.execute(query, ("", firstName, middleName, lastName, number, email))
 
     lastId = dbcursor.lastrowid
-    newFile = open(f"./Contact_images/{firstName.get()}_{lastName.get()}{lastId}.png", "xb")
-    with open(file, "rb") as buf:
-        newFile.write(buf.read())
-    newFile.close()
+    newFilePath = copyImage(file, firstName, lastName, lastId)
 
-    contactImages[lastId] = tk.PhotoImage(file=newFile.name)
-
-    dbcursor.execute("UPDATE contacts SET image = ? WHERE id = ?", (newFile.name, lastId))
+    dbcursor.execute("UPDATE contacts SET image = ? WHERE id = ?", (newFilePath, lastId))
 
     contactdb.commit()
     contactList.updateContacts()
-    file = ""
+
+def copyImage(path, firstName, lastName, contactId) -> str:
+    """ Make new image path or write over old image """
+    
+    newPath = f"./Contact_images/{firstName}_{lastName}{contactId}.png"
+    try:
+        newFile = open(newPath, "xb")
+    except FileExistsError:
+        newFile = open(newPath, "wb")
+
+    with open(path, "rb") as old:
+        newFile.write(old.read())
+    newFile.close()
+
+    return newFile.name
 
 def deleteContact(contactId: int) -> None:
-    # TODO Make function to delete specified contact
     dbcursor.execute("DELETE FROM contacts WHERE id = ?", contactId)
     contactdb.commit()
     contactList.updateContacts()
@@ -498,5 +497,3 @@ root.mainloop()
 
 contactdb.commit()
 contactdb.close()
-
-# TODO add column for more data function, make presentation prettier, etc.
