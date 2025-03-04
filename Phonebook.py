@@ -50,25 +50,30 @@ contactImages = {}
 contactImages["placeholder"] = tk.PhotoImage(file="./Contact_images/program_images/blank_person.png")
 
 for contact in dbcursor.execute("SELECT * FROM contacts").fetchall():
-    contactId = contact[0]
     if contact[PATH]:
-        contactImages[contactId] = tk.PhotoImage(file=contact[PATH])
+        contactImages[contact[ID]] = tk.PhotoImage(file=contact[PATH])
     else:
-        contactImages[contactId] = "No path"
+        contactImages[contact[ID]] = "No path"
 
 def updateImages(key = "", value = "") -> dict:
     global contactImages
-    if not key or not value:
+    if not key and not value:
         return contactImages
     contactImages[key] = value
     return contactImages
 
 class listbox(ttk.Treeview):
+    """ Displays contacts in a treeview. Comes with 
+        update contacts function to refresh the listbox, delete contact
+        function to delete selected contact, and some internal
+        functions used by the update contacts function """
+
     def __init__(self, dbcursor: sql.Cursor, contactWindow: "function", master = None,\
                                                                                   *args, **kwargs):
         super().__init__(master, *args, **kwargs)
         self.dbcursor = dbcursor
-        self.imageList = []
+        self.imageList = [] # Necessary to stop GC from taking tk.photos
+        self.contactImages = {}
         self.heading("#0", text="")
         self.heading("name", text="Name")
         self.heading("number", text="Phone Number")
@@ -77,7 +82,11 @@ class listbox(ttk.Treeview):
         self.grid()
 
     def updateContacts(self, firstName="", middleName="", lastName="", number="", email=""):
+        """ Refreshes listbox """
+
         self.clear()
+        self.contactImages = updateImages()
+
         query =  """ SELECT * FROM contacts
                     WHERE first_name LIKE ? 
                         AND middle_name LIKE ?
@@ -90,25 +99,26 @@ class listbox(ttk.Treeview):
         results = self.dbcursor.execute(query, info)
         results = results.fetchall()
 
-        for contactInfo in results:
-            fullName = f"{contactInfo[FIRSTNAME]} {contactInfo[MIDDLENAME]} {contactInfo[LASTNAME]}"
+        for contact in results:
+            fullName = f"{contact[FIRSTNAME]} {contact[MIDDLENAME]} {contact[LASTNAME]}"
 
-            if contactImages[contactInfo[ID]] == "No path":
-                image = contactImages["placeholder"]
+            if self.contactImages[contact[ID]] == "No path":
+                image = self.contactImages["placeholder"]
             else:
-                image = contactImages[contactInfo[ID]]
+                image = self.contactImages[contact[ID]]
 
             image = image.subsample(4)
             self.imageList.append(image)
             self.insert("", ["end"],\
-                         values=[fullName, contactInfo[PHONE], contactInfo[EMAIL]],\
-                              image=image, tags=contactInfo[ID])
+                         values=[fullName, contact[PHONE], contact[EMAIL]],\
+                              image=image, tags=contact[ID])
         self.update()
 
     def deleteContact(self):
         deleteContact(self.item(self.selection()[0], "tags"))
 
     def clear(self):
+        """ Internal function """
         for child in self.get_children():
             self.delete(child)
         self.imageList.clear()
