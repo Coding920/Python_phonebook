@@ -32,7 +32,7 @@ EMAIL = 6
 FRAMEPADDING = 20
 BORDERWIDTH = 5
 
-contactImages = {}
+contactImages: dict[tk.PhotoImage] = {}
 def updateImages(key = "", value = "") -> dict:
     global contactImages
     if not key and not value:
@@ -135,7 +135,7 @@ class listbox(ttk.Treeview):
         super().__init__(*args, **kwargs)
         self.dbcursor = dbcursor
         self.imageList = [] # Necessary to stop GC from taking tk.photos
-        self.contactImages = {}
+        self.contactImages: dict[tk.PhotoImage] = {}
         self.heading("#0", text="")
         self.heading("name", text="Name")
         self.heading("number", text="Phone Number")
@@ -165,11 +165,21 @@ class listbox(ttk.Treeview):
             fullName = f"{contact[FIRSTNAME]} {contact[MIDDLENAME]} {contact[LASTNAME]}"
 
             if self.contactImages[contact[ID]] == "No path":
-                image = self.contactImages["placeholder"]
+                image: tk.PhotoImage = self.contactImages["placeholder"]
             else:
-                image = self.contactImages[contact[ID]]
+                image: tk.PhotoImage = self.contactImages[contact[ID]]
 
-            image = image.subsample(4)
+            # Image resizing
+            height = image.height() # The height needs to be 50 at the end
+
+            # 50 = x * or % height      So we have to solve for x
+            if height > 60:
+                x = height / 60
+                image = image.subsample(round(x))
+            elif height < 60:
+                x = 60 / height
+                image = image.zoom(round(x))
+
             self.imageList.append(image)
             self.insert("", ["end"],\
                          values=[fullName, contact[PHONE], contact[EMAIL]],\
@@ -213,9 +223,21 @@ class displayerPage(tk.Toplevel):
         self.title(formatedName)
 
         if self.contactImages[self.contactId] == "No path":
-            self.image = ttk.Label(self, image=self.contactImages["placeholder"])
+            self.image: tk.PhotoImage = self.contactImages["placeholder"]
         else:
-            self.image = ttk.Label(self, image=self.contactImages[self.contactId])
+            self.image: tk.PhotoImage = self.contactImages[self.contactId]
+
+        height = self.image.height() # We want height to be 300
+
+        # 300 = X * or % height
+        if height > 300:
+            x = height / 300
+            self.image = self.image.subsample(round(x))
+        elif height < 300:
+            x = 300 / height
+            self.image = self.image.zoom(round(x))
+
+        self.imageLabel = ttk.Label(self, image=self.image)
 
         # Static side of Gui
         self.frame = ttk.Frame(self, padding=FRAMEPADDING)
@@ -255,7 +277,7 @@ class displayerPage(tk.Toplevel):
                                         self.numberIn, self.emailIn]
 
         # Grid
-        self.image.grid(column=0, row=0)
+        self.imageLabel.grid(column=0, row=0)
         self.frame.grid(column=1, row=0)
         self.firstLabel.grid(column=0, row=1)
         self.middleLabel.grid(column=0, row=2)
@@ -342,7 +364,20 @@ class displayerPage(tk.Toplevel):
 
         contactInfo = self.dbcursor.execute("SELECT * FROM contacts WHERE id = ?", (self.contactId,))
         contactInfo = contactInfo.fetchall()[0]
+        self.contactImages = updateImages(self.contactId, tk.PhotoImage(file=contactInfo[PATH]))
+        self.image = self.contactImages[self.contactId]
 
+        height = self.image.height() # We want height to be 300
+
+        # 300 = X * or % height
+        if height > 300:
+            x = height / 300
+            self.image = self.image.subsample(round(x))
+        elif height < 300:
+            x = 300 / height
+            self.image = self.image.zoom(round(x))
+
+        self.imageLabel.configure(image=self.image)
         self.firstName.configure(text=contactInfo[FIRSTNAME])
         self.middleName.configure(text=contactInfo[MIDDLENAME])
         self.lastName.configure(text=contactInfo[LASTNAME])
@@ -350,6 +385,7 @@ class displayerPage(tk.Toplevel):
         self.number.configure(text=contactInfo[PHONE])
         self.email.configure(text=contactInfo[EMAIL])
 
+        self.imageLabel.update()
         for component in self.staticGui:
             component.update()
             component.grid()
@@ -366,8 +402,20 @@ class displayerPage(tk.Toplevel):
             return
 
         self.contactImages = updateImages("temp", tk.PhotoImage(file=self.file))
-        self.image.configure(image=self.contactImages["temp"])
-        self.image.update()
+        self.image = self.contactImages[self.contactId]
+        
+        height = self.image.height() # We want height to be 300
+
+        # 300 = X * or % height
+        if height > 300:
+            x = height / 300
+            self.image = self.image.subsample(round(x))
+        elif height < 300:
+            x = 300 / height
+            self.image = self.image.zoom(round(x))
+
+        self.imageLabel.configure(image=self.image)
+        self.imageLabel.update()
 
     def updateFullName(self):
         self.fullName.configure(text=f"{self.first.get()} {self.last.get()}")
@@ -389,7 +437,17 @@ class blankPage(tk.Toplevel):
         self.number = tk.StringVar()
         self.email = tk.StringVar()
 
-        self.image = ttk.Label(self, image=contactImages["placeholder"])
+        self.image = contactImages["placeholder"]
+        height = self.image.height()
+
+        if height > 300:
+            x = height / 300
+            self.image = self.image.subsample(round(x))
+        elif height < 300:
+            x = 300 / height
+            self.image = self.image.zoom(round(x))
+
+        self.imageLabel = ttk.Label(self, image=self.image)
         imageButton = ttk.Button(self,
                                 command=lambda: self.imageSelect(),
                                 text="Select Image")
@@ -413,7 +471,7 @@ class blankPage(tk.Toplevel):
                             text="Add new contact")
 
         # Grid
-        self.image.grid(column=0, row=0)
+        self.imageLabel.grid(column=0, row=0)
         imageButton.grid(column=0, row=1)
         self.frame.grid(column=1, row=0)
         self.firstLabel.grid(column=0, row=0)
@@ -441,8 +499,19 @@ class blankPage(tk.Toplevel):
             return
 
         self.tempImage = tk.PhotoImage(file=self.file)
-        self.image.configure(image=self.tempImage)
-        self.image.update()
+
+        height = self.tempImage.height() # We want height to be 300
+
+        # 300 = X * or % height
+        if height > 300:
+            x = height / 300
+            self.tempImage = self.tempImage.subsample(round(x))
+        elif height < 300:
+            x = 300 / height
+            self.tempImage = self.tempImage.zoom(round(x))
+
+        self.imageLabel.configure(image=self.tempImage)
+        self.imageLabel.update()
 
     def addContact(self):
         addContact(*self.getInput())
@@ -469,7 +538,7 @@ def copyImage(path, firstName, lastName, contactId) -> str:
         newFile.write(old.read())
     newFile.close()
 
-    return newFile.name
+    return newPath
 
 def addContact(file, firstName, middleName, lastName, number, email) -> None:
     query = """ INSERT INTO contacts (image, first_name, middle_name, last_name, phone, email)
