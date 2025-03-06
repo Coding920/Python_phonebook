@@ -571,9 +571,11 @@ def deleteContact(contactId: int) -> None:
 
 def createWindow(contactId: int):
     contactWindow = displayerPage(contactId, dbcursor)
+    contactWindow.transient(root) # Fixed window being hidden when file dialog is activated
 
 def addContactPage():
     addPage = blankPage()
+    addPage.transient(root) # Fixed window being hidden when file dialog is activated
 
 
 root = mainWindow()
