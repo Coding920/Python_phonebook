@@ -48,7 +48,7 @@ class mainWindow(tk.Tk):
         self.lastName = tk.StringVar()
         self.number = tk.StringVar()
         self.email = tk.StringVar()
-        
+
         updateImages("window", tk.PhotoImage(file="./Contact_images/program_images/phonebook.png"))
         updateImages("placeholder", tk.PhotoImage(file="./Contact_images/program_images/blank_person.png"))
 
@@ -458,7 +458,7 @@ class blankPage(tk.Toplevel):
 
 def copyImage(path, firstName, lastName, contactId) -> str:
     """ Make new image path or write over old image """
-    
+
     newPath = f"./Contact_images/{firstName}_{lastName}{contactId}.png"
     try:
         newFile = open(newPath, "xb")
