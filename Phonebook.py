@@ -1,9 +1,11 @@
 """ Gui program for accessing contacts based off of the Windows 7 program """
 
+import os
 import sqlite3 as sql
 import tkinter as tk
 from tkinter import ttk
 from tkinter import filedialog
+from tkinter import messagebox
 
 # DB Setup
 contactdb = sql.connect("contacts.db")
@@ -49,12 +51,20 @@ class mainWindow(tk.Tk):
         self.number = tk.StringVar()
         self.email = tk.StringVar()
 
-        updateImages("window", tk.PhotoImage(file="./Contact_images/program_images/phonebook.png"))
-        updateImages("placeholder", tk.PhotoImage(file="./Contact_images/program_images/blank_person.png"))
+        updateImages("window",
+                        tk.PhotoImage(file="./Contact_images/program_images/phonebook.png"))
+        updateImages("placeholder",
+                        tk.PhotoImage(file="./Contact_images/program_images/blank_person.png"))
 
         for contact in dbcursor.execute("SELECT * FROM contacts").fetchall():
             if contact[PATH]:
-                updateImages(contact[ID], tk.PhotoImage(file=contact[PATH]))
+                try:
+                    updateImages(contact[ID], tk.PhotoImage(file=contact[PATH]))
+                except tk.TclError:
+                    self.after(150, lambda: messagebox.showerror("Image file missing",
+                    f"The image associated with {contact[FIRSTNAME]}'s contact is missing"))
+
+                    updateImages(contact[ID], "No path")
             else:
                 updateImages(contact[ID], "No path")
 
@@ -71,7 +81,7 @@ class mainWindow(tk.Tk):
 
         # Menu for listing, searching, and deleting contacts
         self.searchMenu = ttk.Frame(self)
-        
+
         self.firstNameEntry = ttk.Entry(self.searchMenu, textvariable=self.firstName)
         self.firstNameLabel = ttk.Label(self.searchMenu, text="First name: ")
         self.middleNameEntry = ttk.Entry(self.searchMenu, textvariable=self.middleName)
@@ -83,14 +93,18 @@ class mainWindow(tk.Tk):
         self.emailEntry = ttk.Entry(self.searchMenu, textvariable=self.email)
         self.emailLabel = ttk.Label(self.searchMenu, text="Email Address:")
 
-        self.listButton = ttk.Button(self.searchMenu, text="List all", command=lambda: self.contactList.updateContacts())
+        self.listButton = ttk.Button(self.searchMenu, text="List all", 
+                                     command=lambda: self.contactList.updateContacts())
         self.searchButton = ttk.Button(self.searchMenu, text="Search", command=lambda:\
                                 self.contactList.updateContacts(*self.getInput()))
-        self.deleteButton = ttk.Button(self.searchMenu, text="Delete Contact", command=lambda: self.contactList.deleteContact())
+        self.deleteButton = ttk.Button(self.searchMenu, text="Delete Contact",
+                                        command=lambda: self.contactList.deleteContact())
 
         # Contact list
         self.content = ttk.Frame(self, padding=FRAMEPADDING)
-        self.contactList = listbox(dbcursor, createWindow, self.content, columns=["name","number","email", "delete"], height=8)
+        self.contactList = listbox(dbcursor, createWindow,
+                                    self.content, columns=["name","number","email", "delete"],
+                                    height=8)
 
         # Grid Info
 
@@ -190,7 +204,7 @@ class listbox(ttk.Treeview):
         deleteContact(self.item(self.selection()[0], "tags"))
 
     def clear(self):
-        """ Internal function """
+        """ Empties listbox """
         for child in self.get_children():
             self.delete(child)
         self.imageList.clear()
@@ -241,7 +255,8 @@ class displayerPage(tk.Toplevel):
 
         # Static side of Gui
         self.frame = ttk.Frame(self, padding=FRAMEPADDING)
-        self.editButton = ttk.Button(self.frame, text="Edit Contact", command=lambda: self.editContact())
+        self.editButton = ttk.Button(self.frame, text="Edit Contact", 
+                                     command=lambda: self.editContact())
         self.firstLabel = ttk.Label(self.frame, text="First: ")
         self.middleLabel = ttk.Label(self.frame, text="Middle: ")
         self.lastLabel = ttk.Label(self.frame, text="Last: ")
@@ -265,7 +280,8 @@ class displayerPage(tk.Toplevel):
                                 text="Select Image")
 
         self.exitButton = ttk.Button(self.frame, text="Don't save", command=lambda: self.exitEdit())
-        self.saveButton = ttk.Button(self.frame, text="Save Contact", command=lambda: [self.save(), self.exitEdit()])
+        self.saveButton = ttk.Button(self.frame, text="Save Contact",
+                                     command=lambda: [self.save(), self.exitEdit()])
         self.firstNameIn = ttk.Entry(self.frame, textvariable=self.first)
         self.middleNameIn = ttk.Entry(self.frame, textvariable=self.middle)
         self.lastNameIn = ttk.Entry(self.frame, textvariable=self.last)
@@ -362,7 +378,8 @@ class displayerPage(tk.Toplevel):
         for component in self.editGui:
             component.grid_remove()
 
-        contactInfo = self.dbcursor.execute("SELECT * FROM contacts WHERE id = ?", (self.contactId,))
+        contactInfo = self.dbcursor.execute("SELECT * FROM contacts WHERE id = ?",
+                                             (self.contactId,))
         contactInfo = contactInfo.fetchall()[0]
         self.contactImages = updateImages(self.contactId, tk.PhotoImage(file=contactInfo[PATH]))
         self.image = self.contactImages[self.contactId]
@@ -565,8 +582,31 @@ def addContact(file, firstName, middleName, lastName, number, email) -> None:
     root.contactList.updateContacts()
 
 def deleteContact(contactId: int) -> None:
+    contact = dbcursor.execute("SELECT * FROM contacts WHERE id = ?", contactId).fetchall()[0]
+    msg = messagebox.askyesno("Delete contact",
+                  f"Are you sure you want to delete {contact[FIRSTNAME]} {contact[LASTNAME]}?")
+
+    if not msg:
+        return
+
     dbcursor.execute("DELETE FROM contacts WHERE id = ?", contactId)
     contactdb.commit()
+
+    if not contact[PATH]:
+        root.contactList.updateContacts()
+        return
+
+    try:
+        os.remove(contact[PATH])
+    except FileNotFoundError:
+        pass
+    except PermissionError:
+        messagebox.showerror("Error",
+                            "Couldn't delete image associated with contact/Permission error")
+    except Exception as e:
+        messagebox.showerror("Error", e)
+
+
     root.contactList.updateContacts()
 
 def createWindow(contactId: int):
