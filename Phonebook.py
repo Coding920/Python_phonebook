@@ -1,9 +1,11 @@
 """ Gui program for accessing contacts based off of the Windows 7 program """
 
+import os
 import sqlite3 as sql
 import tkinter as tk
 from tkinter import ttk
 from tkinter import filedialog
+from tkinter import messagebox
 
 # DB Setup
 contactdb = sql.connect("contacts.db")
@@ -54,7 +56,13 @@ class mainWindow(tk.Tk):
 
         for contact in dbcursor.execute("SELECT * FROM contacts").fetchall():
             if contact[PATH]:
-                updateImages(contact[ID], tk.PhotoImage(file=contact[PATH]))
+                try:
+                    updateImages(contact[ID], tk.PhotoImage(file=contact[PATH]))
+                except tk.TclError:
+                    self.after(150, lambda: messagebox.showerror("Image file missing",
+                    f"The image associated with {contact[FIRSTNAME]}'s contact is missing"))
+
+                    updateImages(contact[ID], "No path")
             else:
                 updateImages(contact[ID], "No path")
 
@@ -190,7 +198,7 @@ class listbox(ttk.Treeview):
         deleteContact(self.item(self.selection()[0], "tags"))
 
     def clear(self):
-        """ Internal function """
+        """ Empties listbox """
         for child in self.get_children():
             self.delete(child)
         self.imageList.clear()
@@ -565,8 +573,29 @@ def addContact(file, firstName, middleName, lastName, number, email) -> None:
     root.contactList.updateContacts()
 
 def deleteContact(contactId: int) -> None:
+    contact = dbcursor.execute("SELECT * FROM contacts WHERE id = ?", contactId).fetchall()[0]
+    msg = messagebox.askyesno("Delete contact",
+                  f"Are you sure you want to delete {contact[FIRSTNAME]} {contact[LASTNAME]}?")
+
+    if not msg:
+        return
+
     dbcursor.execute("DELETE FROM contacts WHERE id = ?", contactId)
     contactdb.commit()
+
+    if not contact[PATH]:
+        root.contactList.updateContacts()
+        return
+
+    try:
+        os.remove(contact[PATH])
+    except FileNotFoundError:
+        pass
+    except PermissionError:
+        messagebox.showerror("Error", "Couldn't delete image associated with contact/Permission error")
+    except Exception as e:
+        print(e)
+
     root.contactList.updateContacts()
 
 def createWindow(contactId: int):
