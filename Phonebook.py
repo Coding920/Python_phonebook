@@ -20,12 +20,6 @@ tableCreation = """CREATE TABLE IF NOT EXISTS contacts(
                     email TEXT)"""
 dbcursor.execute(tableCreation)
 
-root = tk.Tk()
-root.title("Phonebook")
-root.iconphoto(True, tk.PhotoImage(file="./Contact_images/program_images/phonebook.png"))
-style = ttk.Style()
-style.configure("Treeview", rowheight=60)
-
 # Variables
 ID = 0
 PATH = 1
@@ -38,23 +32,7 @@ EMAIL = 6
 FRAMEPADDING = 20
 BORDERWIDTH = 5
 
-file = ""
-firstName = tk.StringVar()
-middleName = tk.StringVar()
-lastName = tk.StringVar()
-number = tk.StringVar()
-email = tk.StringVar()
-listForTable = tk.StringVar()
-lastQuery = []
 contactImages = {}
-contactImages["placeholder"] = tk.PhotoImage(file="./Contact_images/program_images/blank_person.png")
-
-for contact in dbcursor.execute("SELECT * FROM contacts").fetchall():
-    if contact[PATH]:
-        contactImages[contact[ID]] = tk.PhotoImage(file=contact[PATH])
-    else:
-        contactImages[contact[ID]] = "No path"
-
 def updateImages(key = "", value = "") -> dict:
     global contactImages
     if not key and not value:
@@ -62,15 +40,99 @@ def updateImages(key = "", value = "") -> dict:
     contactImages[key] = value
     return contactImages
 
+class mainWindow(tk.Tk):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.firstName = tk.StringVar()
+        self.middleName = tk.StringVar()
+        self.lastName = tk.StringVar()
+        self.number = tk.StringVar()
+        self.email = tk.StringVar()
+        
+        updateImages("window", tk.PhotoImage(file="./Contact_images/program_images/phonebook.png"))
+        updateImages("placeholder", tk.PhotoImage(file="./Contact_images/program_images/blank_person.png"))
+
+        for contact in dbcursor.execute("SELECT * FROM contacts").fetchall():
+            if contact[PATH]:
+                updateImages(contact[ID], tk.PhotoImage(file=contact[PATH]))
+            else:
+                updateImages(contact[ID], "No path")
+
+        self.title("Phonebook")
+        self.iconphoto(True, contactImages["window"])
+        self.style = ttk.Style(self)
+        self.style.configure("Treeview", rowheight=60)
+
+        # The window menu
+        self.menubar = tk.Menu(self)
+        self["menu"] = self.menubar
+        self.menubar.add_command(label="Add Contact", command=lambda: addContactPage())
+        self.menubar.add_command(label="Settings", command=lambda: createWindow(1))
+
+        # Menu for listing, searching, and deleting contacts
+        self.searchMenu = ttk.Frame(self)
+        
+        self.firstNameEntry = ttk.Entry(self.searchMenu, textvariable=self.firstName)
+        self.firstNameLabel = ttk.Label(self.searchMenu, text="First name: ")
+        self.middleNameEntry = ttk.Entry(self.searchMenu, textvariable=self.middleName)
+        self.middleNameLabel = ttk.Label(self.searchMenu, text="Middle name: ")
+        self.lastNameEntry = ttk.Entry(self.searchMenu, textvariable=self.lastName)
+        self.lastNameLabel = ttk.Label(self.searchMenu, text="Last name: ")
+        self.numberEntry = ttk.Entry(self.searchMenu, textvariable=self.number)
+        self.numberLabel = ttk.Label(self.searchMenu, text="Phone Number:")
+        self.emailEntry = ttk.Entry(self.searchMenu, textvariable=self.email)
+        self.emailLabel = ttk.Label(self.searchMenu, text="Email Address:")
+
+        self.listButton = ttk.Button(self.searchMenu, text="List all", command=lambda: self.contactList.updateContacts())
+        self.searchButton = ttk.Button(self.searchMenu, text="Search", command=lambda:\
+                                self.contactList.updateContacts(*self.getInput()))
+        self.deleteButton = ttk.Button(self.searchMenu, text="Delete Contact", command=lambda: self.contactList.deleteContact())
+
+        # Contact list
+        self.content = ttk.Frame(self, padding=FRAMEPADDING)
+        self.contactList = listbox(dbcursor, createWindow, self.content, columns=["name","number","email", "delete"], height=8)
+
+        # Grid Info
+
+        self.columnconfigure(0, weight=1)
+        self.rowconfigure(0, weight=1)
+        self.configure(padx=FRAMEPADDING/2, pady=FRAMEPADDING/2)
+
+        self.searchMenu.grid(column=1, row=0)
+        self.firstNameLabel.grid(column=0, row=0)
+        self.middleNameLabel.grid(column=0, row=1)
+        self.lastNameLabel.grid(column=0, row=2)
+        self.numberLabel.grid(column=0, row=3)
+        self.emailLabel.grid(column=0, row=4)
+
+        self.firstNameEntry.grid(column=1, row=0)
+        self.middleNameEntry.grid(column=1, row=1)
+        self.lastNameEntry.grid(column=1, row=2)
+        self.numberEntry.grid(column=1, row=3)
+        self.emailEntry.grid(column=1, row=4)
+
+        self.deleteButton.grid(column=2, row=1)
+        self.searchButton.grid(column=2, row=2)
+        self.listButton.grid(column=2, row=3)
+
+        self.content.grid(column=0, row=0)
+
+        # Setting up contact list
+        self.contactList.updateContacts()
+
+    def getInput(self):
+        return [self.firstName.get(), self.middleName.get(), self.lastName.get(),
+                 self.number.get(), self.email.get()]
+
+
 class listbox(ttk.Treeview):
     """ Displays contacts in a treeview. Comes with 
         update contacts function to refresh the listbox, delete contact
         function to delete selected contact, and some internal
         functions used by the update contacts function """
 
-    def __init__(self, dbcursor: sql.Cursor, contactWindow: "function", master = None,\
-                                                                                  *args, **kwargs):
-        super().__init__(master, *args, **kwargs)
+    def __init__(self, dbcursor: sql.Cursor, contactWindow: "function", *args, **kwargs):
+        super().__init__(*args, **kwargs)
         self.dbcursor = dbcursor
         self.imageList = [] # Necessary to stop GC from taking tk.photos
         self.contactImages = {}
@@ -128,8 +190,8 @@ class displayerPage(tk.Toplevel):
     """ Display page for contacts. Normally a static page but
             with the edit button, it can be used to edit contacts """
 
-    def __init__(self, contactId: int, dbcursor: sql.Cursor, *args, master = None, **kwargs):
-        super().__init__(master, *args, **kwargs)
+    def __init__(self, contactId: int, dbcursor: sql.Cursor, *args, **kwargs):
+        super().__init__(*args, **kwargs)
         # Variables
         self.contactId = int(contactId[0])
         self.dbcursor = dbcursor
@@ -262,14 +324,14 @@ class displayerPage(tk.Toplevel):
 
         if self.file == "":
             self.dbcursor.execute(query, (self.file, *self.getInput(), self.contactId))
-            contactList.updateContacts()
+            root.contactList.updateContacts()
             return
 
         newFilePath = copyImage(self.file, self.first.get(), self.last.get(), self.contactId)
 
         self.contactImages = updateImages(self.contactId, tk.PhotoImage(file=newFilePath))
         self.dbcursor.execute(query, (newFilePath, *self.getInput(), self.contactId))
-        contactList.updateContacts()
+        root.contactList.updateContacts()
 
     def exitEdit(self):
         """ Takes window out of edit mode and updates static side Gui
@@ -317,8 +379,8 @@ class displayerPage(tk.Toplevel):
 
 
 class blankPage(tk.Toplevel):
-    def __init__(self, master = None):
-        super().__init__(master)
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
         self.file = ""
         self.tempImage = None
         self.firstName = tk.StringVar()
@@ -394,33 +456,6 @@ class blankPage(tk.Toplevel):
                 self.number.get(), self.email.get()]
 
 
-def getInput() -> list:
-    return [firstName.get(), middleName.get(), lastName.get(), number.get(), email.get()]
-
-def addContact(file, firstName, middleName, lastName, number, email) -> None:
-    query = """ INSERT INTO contacts (image, first_name, middle_name, last_name, phone, email)
-                             VALUES (?, ?, ?, ?, ?, ?) """
-
-    if file == "":
-        dbcursor.execute(query, (file, firstName, middleName, lastName, number, email))
-        lastId = dbcursor.lastrowid
-        updateImages(lastId, contactImages["placeholder"])
-        contactdb.commit()
-        contactList.updateContacts()
-        return
-
-    dbcursor.execute(query, ("", firstName, middleName, lastName, number, email))
-
-    lastId = dbcursor.lastrowid
-    newFilePath = copyImage(file, firstName, lastName, lastId)
-
-    updateImages(lastId, tk.PhotoImage(file=newFilePath)) # Fix here
-
-    dbcursor.execute("UPDATE contacts SET image = ? WHERE id = ?", (newFilePath, lastId))
-
-    contactdb.commit()
-    contactList.updateContacts()
-
 def copyImage(path, firstName, lastName, contactId) -> str:
     """ Make new image path or write over old image """
     
@@ -436,10 +471,34 @@ def copyImage(path, firstName, lastName, contactId) -> str:
 
     return newFile.name
 
+def addContact(file, firstName, middleName, lastName, number, email) -> None:
+    query = """ INSERT INTO contacts (image, first_name, middle_name, last_name, phone, email)
+                             VALUES (?, ?, ?, ?, ?, ?) """
+
+    if file == "":
+        dbcursor.execute(query, (file, firstName, middleName, lastName, number, email))
+        lastId = dbcursor.lastrowid
+        updateImages(lastId, contactImages["placeholder"])
+        contactdb.commit()
+        root.contactList.updateContacts()
+        return
+
+    dbcursor.execute(query, ("", firstName, middleName, lastName, number, email))
+
+    lastId = dbcursor.lastrowid
+    newFilePath = copyImage(file, firstName, lastName, lastId)
+
+    updateImages(lastId, tk.PhotoImage(file=newFilePath)) # Fix here
+
+    dbcursor.execute("UPDATE contacts SET image = ? WHERE id = ?", (newFilePath, lastId))
+
+    contactdb.commit()
+    root.contactList.updateContacts()
+
 def deleteContact(contactId: int) -> None:
     dbcursor.execute("DELETE FROM contacts WHERE id = ?", contactId)
     contactdb.commit()
-    contactList.updateContacts()
+    root.contactList.updateContacts()
 
 def createWindow(contactId: int):
     contactWindow = displayerPage(contactId, dbcursor)
@@ -447,60 +506,8 @@ def createWindow(contactId: int):
 def addContactPage():
     addPage = blankPage()
 
-menubar = tk.Menu(root)
-root["menu"] = menubar
-menubar.add_command(label="Add Contact", command=lambda: addContactPage())
-menubar.add_command(label="Settings", command=lambda: createWindow(1))
 
-# Menu for listing, searching, adding, and deleting contacts
-menu = ttk.Frame(root, padding=FRAMEPADDING, borderwidth=BORDERWIDTH, relief="raised")
-
-firstNameEntry = ttk.Entry(menu, textvariable=firstName)
-firstNameLabel = ttk.Label(menu, text="First name: ")
-middleNameEntry = ttk.Entry(menu, textvariable=middleName)
-middleNameLabel = ttk.Label(menu, text="Middle name: ")
-lastNameEntry = ttk.Entry(menu, textvariable=lastName)
-lastNameLabel = ttk.Label(menu, text="Last name: ")
-numberEntry = ttk.Entry(menu, textvariable=number)
-numberLabel = ttk.Label(menu, text="Phone Number:")
-emailEntry = ttk.Entry(menu, textvariable=email)
-emailLabel = ttk.Label(menu, text="Email Address:")
-
-listButton = ttk.Button(menu, text="List all", command=lambda: contactList.updateContacts())
-searchButton = ttk.Button(menu, text="Search", command=lambda:\
-                           contactList.updateContacts(*getInput()))
-deleteButton = ttk.Button(menu, text="Delete Contact", command=lambda: contactList.deleteContact())
-
-# Search result table
-content = ttk.Frame(root, padding=FRAMEPADDING)
-contactList = listbox(dbcursor, createWindow, content, columns=["name","number","email", "delete"], height=8)
-
-# Grid info - Menu
-root.columnconfigure(0, weight=1)
-root.rowconfigure(0, weight=1)
-root.configure(padx=FRAMEPADDING/2, pady=FRAMEPADDING/2)
-
-menu.grid(column=1, row=0)
-firstNameLabel.grid(column=0, row=0)
-middleNameLabel.grid(column=0, row=1)
-lastNameLabel.grid(column=0, row=2)
-numberLabel.grid(column=0, row=3)
-emailLabel.grid(column=0, row=4)
-
-firstNameEntry.grid(column=1, row=0)
-middleNameEntry.grid(column=1, row=1)
-lastNameEntry.grid(column=1, row=2)
-numberEntry.grid(column=1, row=3)
-emailEntry.grid(column=1, row=4)
-
-deleteButton.grid(column=2, row=1)
-searchButton.grid(column=2, row=2)
-listButton.grid(column=2, row=3)
-
-content.grid(column=0, row=0)
-
-# Setting up listbox
-contactList.updateContacts()
+root = mainWindow()
 
 # GUI Startpoint
 root.mainloop()
