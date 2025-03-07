@@ -1,11 +1,29 @@
 """ Gui program for accessing contacts based off of the Windows 7 program """
 
 import os
+import json
 import sqlite3 as sql
 import tkinter as tk
 from tkinter import ttk
 from tkinter import filedialog
 from tkinter import messagebox
+
+# Config settings stuff
+def_settings = {
+    "Font": "Arial",
+    "Font-size": 10,
+    "Font-color": "Black",
+    "Background-color": "Light Gray",
+}
+
+# Creates defaults but won't override user settings
+if not os.path.exists("settings.json"):
+    with open("settings.json", "w") as file:
+        json.dump(def_settings, file, indent=4)
+
+# Read json into settings dict
+with open("settings.json", "r") as file:
+    settings = json.load(file)
 
 # DB Setup
 contactdb = sql.connect("contacts.db")
@@ -31,6 +49,14 @@ LASTNAME = 4
 PHONE = 5
 EMAIL = 6
 
+GRID_KWARGS = {"padx": 2, "pady": 5}
+COLORS = ["Red", "Black", "White", "Blue", "Aquamarine", "Cyan", "Chocolate",
+                "Gray", "Light Gray", "Dark Gray", "Dark Red", "Dark Blue"]
+
+FONTS = ["Terminal", "Modern", "Roman", "Script", "Courier", "MS Serif", "MS Sans Serif",
+        "Ariel", "Ariel Greek", "Ariel Black", "Calibri", "Calibri Light", "Cambria",
+        "Comic Sans MS", "Times New Roman", "Century Gothic"]
+
 FRAMEPADDING = 20
 BORDERWIDTH = 5
 
@@ -51,11 +77,13 @@ class mainWindow(tk.Tk):
         self.number = tk.StringVar()
         self.email = tk.StringVar()
 
+        # Data Setup
         updateImages("window",
                         tk.PhotoImage(file="./Contact_images/program_images/phonebook.png"))
         updateImages("placeholder",
                         tk.PhotoImage(file="./Contact_images/program_images/blank_person.png"))
 
+        # Inputting data for contact images
         for contact in dbcursor.execute("SELECT * FROM contacts").fetchall():
             if contact[PATH]:
                 try:
@@ -68,66 +96,89 @@ class mainWindow(tk.Tk):
             else:
                 updateImages(contact[ID], "No path")
 
+        # Gui Defining
         self.title("Phonebook")
         self.iconphoto(True, contactImages["window"])
+
+        # Style
+        self.configure(background=settings["Background-color"])
         self.style = ttk.Style(self)
-        self.style.configure("Treeview", rowheight=60)
+        self.style.theme_use("alt")
+        self.style.configure(".",
+                              font=(settings["Font"], settings["Font-size"]),
+                              foreground=settings["Font-color"],
+                              background=settings["Background-color"])
+        self.style.configure("Treeview", rowheight=60,
+                              foreground=settings["Font-color"],
+                              background=settings["Background-color"],
+                              fieldbackground=settings["Background-color"])
 
         # The window menu
         self.menubar = tk.Menu(self)
         self["menu"] = self.menubar
+        self.menubar.add_command(label="Home", command=lambda: self.homePage())
         self.menubar.add_command(label="Add Contact", command=lambda: addContactPage())
-        self.menubar.add_command(label="Settings", command=lambda: createWindow(1))
+        self.menubar.add_command(label="Settings", command=lambda: self.settingsPage())
 
         # Menu for listing, searching, and deleting contacts
         self.searchMenu = ttk.Frame(self)
+        self.inputs = ttk.Frame(self.searchMenu)
 
-        self.firstNameEntry = ttk.Entry(self.searchMenu, textvariable=self.firstName)
-        self.firstNameLabel = ttk.Label(self.searchMenu, text="First name: ")
-        self.middleNameEntry = ttk.Entry(self.searchMenu, textvariable=self.middleName)
-        self.middleNameLabel = ttk.Label(self.searchMenu, text="Middle name: ")
-        self.lastNameEntry = ttk.Entry(self.searchMenu, textvariable=self.lastName)
-        self.lastNameLabel = ttk.Label(self.searchMenu, text="Last name: ")
-        self.numberEntry = ttk.Entry(self.searchMenu, textvariable=self.number)
-        self.numberLabel = ttk.Label(self.searchMenu, text="Phone Number:")
-        self.emailEntry = ttk.Entry(self.searchMenu, textvariable=self.email)
-        self.emailLabel = ttk.Label(self.searchMenu, text="Email Address:")
+        self.firstNameEntry = ttk.Entry(self.inputs, textvariable=self.firstName)
+        self.firstNameLabel = ttk.Label(self.inputs, text="First name: ")
+        self.middleNameEntry = ttk.Entry(self.inputs, textvariable=self.middleName)
+        self.middleNameLabel = ttk.Label(self.inputs, text="Middle name: ")
+        self.lastNameEntry = ttk.Entry(self.inputs, textvariable=self.lastName)
+        self.lastNameLabel = ttk.Label(self.inputs, text="Last name: ")
+        self.numberEntry = ttk.Entry(self.inputs, textvariable=self.number)
+        self.numberLabel = ttk.Label(self.inputs, text="Phone Number:")
+        self.emailEntry = ttk.Entry(self.inputs, textvariable=self.email)
+        self.emailLabel = ttk.Label(self.inputs, text="Email Address:")
 
-        self.listButton = ttk.Button(self.searchMenu, text="List all", 
+        self.listButton = ttk.Button(self.inputs, text="List all", 
                                      command=lambda: self.contactList.updateContacts())
-        self.searchButton = ttk.Button(self.searchMenu, text="Search", command=lambda:\
+        self.searchButton = ttk.Button(self.inputs, text="Search", command=lambda:\
                                 self.contactList.updateContacts(*self.getInput()))
         self.deleteButton = ttk.Button(self.searchMenu, text="Delete Contact",
                                         command=lambda: self.contactList.deleteContact())
+        self.infoLabel = ttk.Label(self.searchMenu,
+                text="""\tFill in these text boxes to search. \n
+                Delete Contacts by selecting them in the list and hitting the delete button\n
+                Double-clicking a contact will launch more information\n
+                Images must be PNG's""")
 
         # Contact list
         self.content = ttk.Frame(self, padding=FRAMEPADDING)
         self.contactList = listbox(dbcursor, createWindow,
-                                    self.content, columns=["name","number","email", "delete"],
+                                    self.content, columns=["name","number","email"],
                                     height=8)
+        self.mainPage = [self.content, self.searchMenu]
 
         # Grid Info
-
         self.columnconfigure(0, weight=1)
         self.rowconfigure(0, weight=1)
         self.configure(padx=FRAMEPADDING/2, pady=FRAMEPADDING/2)
 
-        self.searchMenu.grid(column=1, row=0)
-        self.firstNameLabel.grid(column=0, row=0)
-        self.middleNameLabel.grid(column=0, row=1)
-        self.lastNameLabel.grid(column=0, row=2)
-        self.numberLabel.grid(column=0, row=3)
-        self.emailLabel.grid(column=0, row=4)
+        self.searchMenu.grid(column=1, row=0, sticky=tk.NSEW, **GRID_KWARGS)
 
-        self.firstNameEntry.grid(column=1, row=0)
-        self.middleNameEntry.grid(column=1, row=1)
-        self.lastNameEntry.grid(column=1, row=2)
-        self.numberEntry.grid(column=1, row=3)
-        self.emailEntry.grid(column=1, row=4)
+        self.deleteButton.grid(column=0, row=0, padx=5, pady=40)
+        self.inputs.grid(column=0, row=1)
+        self.infoLabel.grid(column=0, row=2, columnspan=3, padx=5, pady=10)
 
-        self.deleteButton.grid(column=2, row=1)
-        self.searchButton.grid(column=2, row=2)
-        self.listButton.grid(column=2, row=3)
+        self.firstNameLabel.grid(column=0, row=1, **GRID_KWARGS)
+        self.middleNameLabel.grid(column=0, row=2, **GRID_KWARGS)
+        self.lastNameLabel.grid(column=0, row=3, **GRID_KWARGS)
+        self.numberLabel.grid(column=0, row=4, **GRID_KWARGS)
+        self.emailLabel.grid(column=0, row=5, **GRID_KWARGS)
+
+        self.firstNameEntry.grid(column=1, row=1, **GRID_KWARGS)
+        self.middleNameEntry.grid(column=1, row=2, **GRID_KWARGS)
+        self.lastNameEntry.grid(column=1, row=3, **GRID_KWARGS)
+        self.numberEntry.grid(column=1, row=4, **GRID_KWARGS)
+        self.emailEntry.grid(column=1, row=5, **GRID_KWARGS)
+
+        self.searchButton.grid(column=2, row=3, **GRID_KWARGS)
+        self.listButton.grid(column=2, row=4, **GRID_KWARGS)
 
         self.content.grid(column=0, row=0)
 
@@ -137,6 +188,88 @@ class mainWindow(tk.Tk):
     def getInput(self):
         return [self.firstName.get(), self.middleName.get(), self.lastName.get(),
                  self.number.get(), self.email.get()]
+
+    def settingsPage(self):
+        for child in self.mainPage:
+            child.grid_remove()
+
+        self.fontVar = tk.StringVar()
+        self.sizeVar = tk.IntVar()
+        self.fontColorVar = tk.StringVar()
+        self.bgColorVar = tk.StringVar()
+
+        self.settingFrame = ttk.Frame(self, padding=FRAMEPADDING)
+
+        # Font Option
+        self.fontLabel = ttk.Label(self.settingFrame, text="Font Style: ")
+        self.fontOption = ttk.Combobox(self.settingFrame, values=FONTS, textvariable=self.fontVar)
+        self.fontOption.set(settings["Font"])
+        self.fontOption.state(["readonly"])
+
+        # Font-size Option
+        self.fontSizeLabel = ttk.Label(self.settingFrame, text="Font Size: ")
+        fontSizes = [i for i in range(6, 41)]
+        self.fontSize = ttk.Spinbox(self.settingFrame, values=fontSizes, textvariable=self.sizeVar)
+        self.fontSize.state(["readonly"])
+        self.fontSize.set(settings["Font-size"])
+
+        # Font-color Option
+        self.fontColorLabel = ttk.Label(self.settingFrame, text="Font Color: ")
+        self.fontColor = ttk.Combobox(self.settingFrame, values=COLORS,
+                                        textvariable=self.fontColorVar)
+        self.fontColor.set(settings["Font-color"])
+        self.fontColor.state(["readonly"])
+
+        # Bg-color Option
+        self.backgroundLabel = ttk.Label(self.settingFrame, text="Background Color: ")
+        self.bgColor = ttk.Combobox(self.settingFrame, values=COLORS, textvariable=self.bgColorVar)
+        self.bgColor.set(settings["Background-color"])
+        self.bgColor.state(["readonly"])
+
+        self.saveButton = ttk.Button(self.settingFrame, text="Save settings",
+                                     command=lambda: self.saveSettings())
+
+        # Grid
+        self.settingFrame.grid(column=0, row=0)
+
+        self.fontLabel.grid(column=0, row=0, **GRID_KWARGS)
+        self.fontOption.grid(column=1, row=0, **GRID_KWARGS)
+        self.fontSizeLabel.grid(column=0, row=1, **GRID_KWARGS)
+        self.fontSize.grid(column=1, row=1, **GRID_KWARGS)
+        self.fontColorLabel.grid(column=0, row=2, **GRID_KWARGS)
+        self.fontColor.grid(column=1, row=2, **GRID_KWARGS)
+        self.backgroundLabel.grid(column=0, row=3, **GRID_KWARGS)
+        self.bgColor.grid(column=1, row=3, **GRID_KWARGS)
+        self.saveButton.grid(column=0, row=4)
+
+    def saveSettings(self):
+        global settings
+        inputs = {
+        "Font": self.fontVar.get(),
+        "Font-size": self.sizeVar.get(),
+        "Font-color": self.fontColorVar.get(),
+        "Background-color": self.bgColorVar.get()
+        }
+
+        with open("settings.json", "w+") as file:
+            json.dump(inputs, file, indent=4)
+            file.seek(0)
+            settings = json.load(file)
+
+        self.style.configure(".",
+                              font=(settings["Font"], settings["Font-size"]),
+                              foreground=settings["Font-color"],
+                              background=settings["Background-color"])
+        self.style.configure("Treeview", rowheight=60,
+                              foreground=settings["Font-color"],
+                              background=settings["Background-color"],
+                              fieldbackground=settings["Background-color"])
+        self.update()
+
+    def homePage(self):
+        self.settingFrame.grid_remove()
+        for child in self.mainPage:
+            child.grid()
 
 
 class listbox(ttk.Treeview):
@@ -235,6 +368,9 @@ class displayerPage(tk.Toplevel):
 
         formatedName = f"{contactInfo[FIRSTNAME]} {contactInfo[LASTNAME]}"
         self.title(formatedName)
+        self.columnconfigure(0, weight=1)
+        self.rowconfigure(0, weight=1)
+        self.configure(padx=FRAMEPADDING/2, pady=FRAMEPADDING/2)
 
         if self.contactImages[self.contactId] == "No path":
             self.image: tk.PhotoImage = self.contactImages["placeholder"]
@@ -251,7 +387,8 @@ class displayerPage(tk.Toplevel):
             x = 300 / height
             self.image = self.image.zoom(round(x))
 
-        self.imageLabel = ttk.Label(self, image=self.image)
+        self.imageFrame = ttk.Frame(self, padding=FRAMEPADDING)
+        self.imageLabel = ttk.Label(self.imageFrame, image=self.image)
 
         # Static side of Gui
         self.frame = ttk.Frame(self, padding=FRAMEPADDING)
@@ -293,7 +430,9 @@ class displayerPage(tk.Toplevel):
                                         self.numberIn, self.emailIn]
 
         # Grid
+        self.imageFrame.grid(column=0, row=0)
         self.imageLabel.grid(column=0, row=0)
+        self.imageButton.grid(column=0, row=1)
         self.frame.grid(column=1, row=0)
         self.firstLabel.grid(column=0, row=1)
         self.middleLabel.grid(column=0, row=2)
@@ -351,25 +490,35 @@ class displayerPage(tk.Toplevel):
         """ Updates sql table with new contact info and saves images 
                 into the contact_images folder """
 
+        if self.file:
+            query = """ UPDATE contacts SET
+                        image = ?,
+                        first_name = ?,
+                        middle_name = ?, 
+                        last_name = ?, 
+                        phone = ?, 
+                        email = ?
+                        WHERE id = ? """
+
+            newFilePath = copyImage(self.file, self.first.get(), self.last.get(), self.contactId)
+
+            self.contactImages = updateImages(self.contactId, tk.PhotoImage(file=newFilePath))
+            self.dbcursor.execute(query, (newFilePath, *self.getInput(), self.contactId))
+            root.contactList.updateContacts()
+
         query = """ UPDATE contacts SET
-                    image = ?,
                     first_name = ?,
                     middle_name = ?, 
                     last_name = ?, 
                     phone = ?, 
                     email = ?
                     WHERE id = ? """
-
+        
         if self.file == "":
-            self.dbcursor.execute(query, (self.file, *self.getInput(), self.contactId))
+            self.dbcursor.execute(query, (*self.getInput(), self.contactId))
             root.contactList.updateContacts()
             return
 
-        newFilePath = copyImage(self.file, self.first.get(), self.last.get(), self.contactId)
-
-        self.contactImages = updateImages(self.contactId, tk.PhotoImage(file=newFilePath))
-        self.dbcursor.execute(query, (newFilePath, *self.getInput(), self.contactId))
-        root.contactList.updateContacts()
 
     def exitEdit(self):
         """ Takes window out of edit mode and updates static side Gui
@@ -381,8 +530,15 @@ class displayerPage(tk.Toplevel):
         contactInfo = self.dbcursor.execute("SELECT * FROM contacts WHERE id = ?",
                                              (self.contactId,))
         contactInfo = contactInfo.fetchall()[0]
-        self.contactImages = updateImages(self.contactId, tk.PhotoImage(file=contactInfo[PATH]))
+        if not contactInfo[PATH]:
+           self.contactImages = updateImages(self.contactId, contactImages["placeholder"]) 
+        else:
+            self.contactImages = updateImages(self.contactId, tk.PhotoImage(file=contactInfo[PATH]))
+
         self.image = self.contactImages[self.contactId]
+
+        if self.image == "No path":
+            self.image = self.contactImages["placeholder"]
 
         height = self.image.height() # We want height to be 300
 
@@ -419,7 +575,7 @@ class displayerPage(tk.Toplevel):
             return
 
         self.contactImages = updateImages("temp", tk.PhotoImage(file=self.file))
-        self.image = self.contactImages[self.contactId]
+        self.image = self.contactImages["temp"]
         
         height = self.image.height() # We want height to be 300
 
@@ -464,8 +620,9 @@ class blankPage(tk.Toplevel):
             x = 300 / height
             self.image = self.image.zoom(round(x))
 
-        self.imageLabel = ttk.Label(self, image=self.image)
-        imageButton = ttk.Button(self,
+        self.imageFrame = ttk.Frame(self)
+        self.imageLabel = ttk.Label(self.imageFrame, image=self.image)
+        imageButton = ttk.Button(self.imageFrame,
                                 command=lambda: self.imageSelect(),
                                 text="Select Image")
 
@@ -488,9 +645,16 @@ class blankPage(tk.Toplevel):
                             text="Add new contact")
 
         # Grid
+        self.columnconfigure(0, weight=1)
+        self.rowconfigure(0, weight=1)
+        self.configure(padx=FRAMEPADDING/2, pady=FRAMEPADDING/2)
+
+        self.imageFrame.grid(column=0, row=0, sticky=tk.NSEW)
         self.imageLabel.grid(column=0, row=0)
         imageButton.grid(column=0, row=1)
-        self.frame.grid(column=1, row=0)
+
+        self.frame.grid(column=1, row=0, sticky=tk.NSEW)
+
         self.firstLabel.grid(column=0, row=0)
         self.middleLabel.grid(column=0, row=1)
         self.lastLabel.grid(column=0, row=2)
