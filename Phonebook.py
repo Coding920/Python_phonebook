@@ -1,4 +1,9 @@
 """ Gui program for accessing contacts based off of the Windows 7 program """
+# Used un-intergrated Copilot to help with several error messages and the understanding of certain
+# details of code, mostly relating to the use of Tkinter. I tried to keep usage as minimal as possible
+
+# Image for blank person is from https://www.freeimages.com/icon/users-folder-5600760
+# Image for phonebook icon is from https://www.freepik.com/icons/phonebook
 
 import os
 import json
