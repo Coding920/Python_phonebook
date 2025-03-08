@@ -31,7 +31,7 @@ The biggest issue with no row id was that the only way I could delete a contact 
 or email. This meant that if you wanted to delete a contact and another contact had some of the duplication,
 then you'd delete both contacts. Refactoring it back to having a primary key was quite the pain.
 
-#### The third and most recent iteration
+### The third and most recent iteration
 
 This was by far the hardest iteration as I had to carry over all of my logic onto a Gui. Tk is very hard
 to work with as, unlike Html and Css, there aren't nearly as many resources and the support for it is more limited.
